@@ -92,11 +92,8 @@ define('_PUBLIC',BASE_URL.'public/');           //public文件夹,放样式,图�
 define('ADMIN',_PUBLIC.'admin/');       //public/admin/
 define('PAGEJS',_PUBLIC.'admin/pagejs/');       //public/admin/pagejs,相前页面JS
 
-//旧
-//define('XCXID','wxf40fa724b6eaee72');       //小程序appid
-//define('APPSECRET','b72198c27bf438f0e6ef8e6a4d542f73');       //小程序密钥secret
 
 define('SITENAME','比特币项目');       //站点名称
-
+define('HOMEMILL',10);       //站点名称
 
 
