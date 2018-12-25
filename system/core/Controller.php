@@ -92,46 +92,9 @@ class CI_Controller {
 	{
 		return self::$instance;
 	}
-	public function a($data){
-		echo "<pre>";
-		print_r($data);exit;
+//根据页码获取偏移量
+	public function getPage($page,$limit){
+		$offset=($page-1)*$limit;
+		return $offset;
 	}
-
-	/**
-	 * @param $user_id
-	 * @return array    根据用户id获取关注得店铺id  多个
-	 */
-
-	public function getGzShops($user_id,$serch){
-		$where=['wx_users.user_id'=>$user_id];
-		$shop['data']=$this->shop_model->getUserShop($where,$serch);
-		if (!empty($shop['data'])){
-			foreach ($shop['data'] as $k=>$v){
-				$shop['data'][$k]['lat_lng'] = explode(',',$v['lat_lng']);
-				$shop['data'][$k]['telphone'] = explode(';',$v['telphone']);
-				$shop['ids'][]=$v['shop_id'];
-			}
-		}else{
-			$shop=array();
-		}
-		return $shop;
-	}
-	/**
-	 * @param $user_id
-	 * @return array    根据用户id获取关注得店铺id  多个
-	 */
-
-	public function getGzTechs($user_id,$shop_id){
-		$where=['user_id'=>$user_id,'shop_id'=>$shop_id];
-		$tech=$this->wx_user_staff_relation_model->getWhere($where,'technician_id');
-		if (!empty($tech)){
-			foreach ($tech as $k=>$v){
-				$tecs[] = $v['technician_id'];
-			}
-		}else{
-			$tecs=array();
-		}
-		return $tecs;
-	}
-
 }
