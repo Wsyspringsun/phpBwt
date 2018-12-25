@@ -94,6 +94,6 @@ define('PAGEJS',_PUBLIC.'admin/pagejs/');       //public/admin/pagejs,相前页�
 
 
 define('SITENAME','比特币项目');       //站点名称
-define('HOMEMILL',10);       //站点名称
+define('HOMEMACHINE',5);       //站点名称
 
 
