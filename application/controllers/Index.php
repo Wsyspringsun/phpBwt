@@ -10,7 +10,7 @@ class Index extends CI_Controller
     }
     public function index()
     {
-        echo 'Welcome to'.SITENAME;
+        echo 'Welcome wsy to'.SITENAME;
     }
 	public function test(){
 		
