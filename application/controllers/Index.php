@@ -14,7 +14,7 @@ class Index extends CI_Controller
     }
 	public function test(){
 		
-		echo "测试成功";
+		echo "wsy测试成功";
 	
 	}
 }
