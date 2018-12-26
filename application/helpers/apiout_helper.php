@@ -11,7 +11,7 @@ function show200($data=[],$msg='获取成功')
     $out['code']=200;
     $out['msg']=$msg;
     $out['data']=$data;
-    echo json_encode($out);
+    echo json_encode($out,JSON_UNESCAPED_UNICODE);
     exit();
 }
 //用户级提示性输出接口,用于输出针对用户的提示信息
@@ -48,7 +48,7 @@ function show401($msg='参数错误')
     $out['code']=401;
     $out['msg']=$msg;
     $out['data']=[];
-    echo json_encode($out);
+    echo json_encode($out,JSON_UNESCAPED_UNICODE);
     exit();
 }
 //未登录
@@ -79,5 +79,15 @@ function show400_admin($msg='暂无数据'){
     echo json_encode($out);
     exit();
 }
+
+/*
+ * cli模式或者内置server打印调试信息，而不在浏览器输出
+ * param fixed $data    参数可以是除了对象以外的所有数据类型，比如：字符串，数组，jason等
+function console($data){
+     $stdout = fopen('php://stdout', 'w');
+     fwrite($stdout,json_encode($data)."\n");   //为了打印出来的格式更加清晰，把所有数据都格式化成Json字符串
+     fclose($stdout);
+}
+ */
 
 /* End */

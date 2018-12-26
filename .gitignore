@@ -1,1 +1,6 @@
 .svn/
+application/config/database.php
+application/helpers/apiout_helper.php*
+dbtask.txt
+public/sess_save_path/ci_session*
+apidoc/class*
