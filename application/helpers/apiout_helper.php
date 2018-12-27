@@ -20,7 +20,7 @@ function show200($data=[],$msg='获取成功')
     $out['code']=300;
     $out['msg']=$msg;
     $out['data']=[];
-    echo json_encode($out);
+    echo json_encode($out,JSON_UNESCAPED_UNICODE);
     exit();
 }
 //开发人员提示性输出接口,用于输出供开发人员参考的提示信息
@@ -81,7 +81,6 @@ function show400_admin($msg='暂无数据'){
 }
 
 /*
- * cli模式或者内置server打印调试信息，而不在浏览器输出
  * param fixed $data    参数可以是除了对象以外的所有数据类型，比如：字符串，数组，jason等
 function console($data){
      $stdout = fopen('php://stdout', 'w');

@@ -412,4 +412,16 @@ function call_cookie_count(){
 // 	}
 // 	return $result;
 }
+
+//使用毫秒级别时间数字串和id组合唯一订单编号@input  member_id:会员唯一id-type:int
+function get_bill_unique_id($member_id){
+    list($t1, $t2) = explode(' ', microtime());
+    $val =  date("YmdHis",floatval($t2)).''.intval(floatval($t1) * 1000);
+    $val = intval($val);
+    $val += $member_id;
+    $val *= 11;
+    return $val;
+}
+
+
 /* End */

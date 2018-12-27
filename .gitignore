@@ -4,3 +4,4 @@ application/helpers/apiout_helper.php*
 dbtask.txt
 public/sess_save_path/ci_session*
 apidoc/class*
+application/controllers/*.php*
