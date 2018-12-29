@@ -277,13 +277,67 @@ class Member extends CI_Controller
 			show300('验证码输入错误');
 		}
 	}	
+	 /**
+     *@title 获取验证码
+     *@desc 获取验证码
+     *
+     *@output {"name":"code","type":"int","desc":"200:发送成功,300各种提示信息"}
+     *@output {"name":"msg","type":"string","desc":"信息说明"}
+     *
+     *@output {"name":"data.loginYzm","type":"string","desc":"登陆验证码4"}
+     * */
 	
+	public function getLoginYzm(){
+		$str='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';		
+		$loginYzm = ""; 
+		for ( $i = 0; $i < YAMLENGTH; $i++ ) { 
+		$loginYzm .= $str[ mt_rand(0, strlen($str) - 1) ]; 
+		} 
+		$this->session->set_tempdata('loginYzm',$loginYzm,300);
+		show200(['loginYzm'=>$loginYzm],'获取成功');
+	}
 	
-	
-	
-	
-	
-	
-	
-	
+	 /**
+	 * @title 用户登陆
+     * @desc  (用户登陆)
+	 
+	 * @input {"name":"mobile","require":"true","type":"int","desc":"手机号"}	
+	 * @input {"name":"yzm","require":"true","type":"int","desc":"登陆验证码4"}	
+	 * @input {"name":"pwd","require":"true","type":"int","desc":"登陆密码"}	
+	 
+	 * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
+     * @output {"name":"msg","type":"string","desc":"信息说明"}
+	 * @output {"name":"data.id","require":"true","type":"int","desc":"用户id"}	
+	 */
+	public function login(){
+		$mobile = trim($this->input->post('mobile'));
+		$loginYzm = trim($this->input->post('loginYzm'));
+		$pwd = trim($this->input->post('pwd'));
+		
+		$mobile = '17681888141';
+		$loginYzm = 'wThR';
+		$pwd = '123456';
+		if(!$mobile){
+            show300('手机号不能为空');
+        }
+        if(!$loginYzm){
+            show300('验证码不能为空');
+        }
+		if(!$pwd){
+            show300('登录密码不能为空');
+        }
+		//print_r($this->session->tempdata('loginYzm'));exit;
+		if($this->session->tempdata('loginYzm')!=$loginYzm ){
+			 show300('验证码错误');
+		}
+		$user_pad=$this->member_model->getwhereRow(['mobile'=>$mobile],'pwd,id');
+		//$data['id']=$user_pad['id'];
+		if(empty($user_pad)){
+			 show300('您还不是会员，请先注册');
+		}
+		if($pwd!=$user_pad['pwd'] ){
+			 show300('密码错误');
+		}
+		show200(['id'=>$user_pad['id']],'登陆成功');
+	}
 }
