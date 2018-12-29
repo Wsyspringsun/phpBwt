@@ -54,36 +54,12 @@ class Machine extends CI_Controller
     {
 		$id=trim($this->input->post('id'));
 		$id=1;
+		if(!$id){
+			show300('矿机id不能为空');
+		}
 		$data=$this->machine_model->getwhere(['id'=>$id,'*']);
 		show200($data);
     }
-	
-	/**
-	 * @title 租用矿机
-     * @desc  (租用矿机)
-	 * @input {"name":"id","require":"true","type":"int","desc":"id"}	
-	 
-	 * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
-     * @output {"name":"msg","type":"string","desc":"信息说明"}
-	 * @output {"name":"data.id","require":"true","type":"int","desc":"矿机id"}	
-	 * @output {"name":"data.title","require":"true","type":"string","desc":"名称"}	
-	 * @output {"name":"data.unit_produce","require":"true","type":"float","desc":"产量/小时"}	
-	 * @output {"name":"data.price","require":"true","type":"float","desc":"价格"}	
-	 * @output {"name":"data.picture","require":"true","type":"string","desc":"图片"}	
-	 * @output {"name":"data.create_date","require":"true","type":"date","desc":"创建时间"}	
-	 * @output {"name":"data.modify_date","require":"true","type":"date","desc":"更新时间"}	
-	 */
-    public function rentMachine()
-    {
-		$id=trim($this->input->post('id'));
-		$member_id=trim($this->input->post('id'));
-		$id=1;
-		$data=$this->machine_model->getwhere(['id'=>$id,'*']);
-		show200($data);
-    }
-	
-	
-	
 	
 	
 }
