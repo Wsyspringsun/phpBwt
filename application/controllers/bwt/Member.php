@@ -8,7 +8,7 @@ class Member extends CI_Controller
     {
         parent::__construct();  
 		 $this->load->library(array('sms/api_demo/SmsDemo','weixin/wechatCallbackapiTest'));
-		$this->load->model(array('member_model','user_model'));		
+		$this->load->model(array('member_model'));		
     }	
 	 /**
 	 * @title 用户注册
