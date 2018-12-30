@@ -10,6 +10,8 @@ class Bill extends CI_Controller
 	$this->load->model(array('bill_model'));		
     }
 
+    /** 处理矿机订单Start **/
+
     /**
     * @title 购买矿机
     * @desc  执行矿机购买流程
@@ -59,23 +61,88 @@ class Bill extends CI_Controller
     * @output {"name":'bill_date_start',"type":'datetime',"desc":'租用起始时间'}
     * @output {"name":'bill_date_end',"type":'datetime',"desc":'租用截止时间'}
     **/
-
-    public function bill_machine_list()
+    public function machine_bill_list()
     {
-        if(empty($this->input->post('id')))
+        if(empty($this->input->post('member_id')))
         {
-            show300('缺少id');
+            show300('缺少会员id');
         }
-        $id = $this->input->post('id');
-        $data = $this -> bill_model -> getBillOutline($id);
-        //$data = array("base_amount"=>100)
-        //$data["base_amount"] = 200;
+        $page = $this->input->post('page') == null ? 1 : $this->input->post('page');
+        $offset = $this -> getPage($page,PAGESIZE) ;
+        $member_id = $this->input->post('member_id');
+        $data = $this -> bill_model -> machine_bill_list($member_id,$offset);
         show200($data);
     }
 
+    /** 处理矿机订单 End **/
+
+    /** 处理交易原始资产相关数据 **/
+
+    /**
+     * @title 购买原始资产下单
+     * @desc  会员买入挂单
+     * @input {"name":"buy_member_id","require":"true","type":"int","desc":"买家会员id"}	
+     * @input {"name":"amount","require":"true","type":"int","desc":"购买数量"}	
+     * @input {"name":"unit_price","require":"true","type":"int","desc":"单价"}	
+     * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
+     * @output {"name":"msg","type":"string","desc":"信息说明"}
+     * @output {"name":"data","type":"int","desc":"生成的订单id"}
+     **/
+    public function buy_bill_origin_res()
+    {
+        $requires = array("buy_member_id"=>"缺少会员id","amount"=>"缺少购买数量","unit_price"=>"缺少购买单价");
+        $params = array();
+        foreach($requires as $k => $v)
+        {
+            if($this->input->post($k) == null){
+                show300($v);
+            }
+            $params[$k] = $this -> input -> post($k);
+        }
+        $data = $this -> bill_model -> buyOriginRes($params);
+        if($data == true){
+            show200($data);
+        }else{
+            show300($data);
+        }
+    }
+
+    /**
+    * @title 针对某个买入订单进行卖出
+    * @desc  点击买单，然后确认卖出后调用的接口
+    * @input {"name":"buy_id","require":"true","type":"int","desc":"买入订单的id"}
+    * @input {"name":"sale_member_id","require":"true","type":"int","desc":"卖家会员id"}	
+    * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
+    * @output {"name":"msg","type":"string","desc":"信息说明"}
+    * @output {"name":"data","type":"int","desc":"生成的订单id"}
+    **/
+    public function sale_2_buy_bill_origin_res()
+    {
+        $requires = array("buy_id" => "缺少买入订单id","sale_member_id" => "缺少卖家会员id");
+        $params = array();
+        foreach($requires as $k => $v)
+        {
+            if($this->input->post($k) == null){
+                show300($v);
+            }
+            $params[$k] = $this -> input -> post($k);
+        }
+        $data = $this -> bill_model -> sale2BuyBillOriginRes($params);
+        if($data == true){
+            show200($data);
+        }else{
+            show300($data);
+        }
+    }
+
+
+
+    /** 处理交易原始资产相关数据 End **/
+
         
-	
-	
+    
+    /** 处理获取个人资产汇总相关数据 **/
+
     /**
      * @title 钱包资产统计
      * @desc  显示了钱包资产统计
@@ -101,5 +168,6 @@ class Bill extends CI_Controller
         $data = $this -> bill_model -> getBillOutline($id);
         show200($data);
     }
+    /*** 处理获取个人资产汇总相关数据End **/
 	
 }
