@@ -42,10 +42,6 @@ class Member extends CI_Controller
 		$pwd_second = 123456;
 		$pwd_second_again = 123456;
 		$referee_mobile = '17681888141';
-		
-		if(!$mobile){
-            show300('手机号不能为空');
-        }
         if(!$yzm){
             show300('验证码不能为空');
         }
@@ -73,15 +69,20 @@ class Member extends CI_Controller
 		}
 		if($referee_mobile){
 			$is_reg=$this->member_model->getwhereRow(['mobile'=>$referee_mobile],'id');
-			$id=$this->member_model->getMin('id');
 			if($is_reg){
 				$referee_id=$is_reg['id'];
 			}else{
-				$referee_id=$id['id'];
+				show300('填写的手机号无效,请重新核实');
 			}
 		}else{
-			$referee_id=$id['id'];
-		}
+			$is_openReg=$this->member_model->getwhereRow(['id'=>$id],'is_openReg');
+			if(!empty($is_openReg)&&$is_openReg['is_openReg']==1){
+				$id=$this->member_model->getMin('id');
+				$referee_id=$id['id'];
+			}else{
+				show300('推荐人缺失,请向推荐人索取推荐链接或者手机号完成注册');
+			}
+		}	
 		if (empty($this->session->tempdata('yzm'))){
             show300('验证码失效，请重新发送');
         }
@@ -128,6 +129,9 @@ class Member extends CI_Controller
 	public function getMyInfo(){
 		$id = trim($this->input->post('id'));
 		//$id = 2;
+		if(empty($id)){
+            show300('会员id不能为空');
+        }
 		$data=$this->member_model->getwhereRow(['id'=>$id],'id,real_name,head_icon,member_lvl');
 		show200($data);
 	}
@@ -340,4 +344,41 @@ class Member extends CI_Controller
 		}
 		show200(['id'=>$user_pad['id']],'登陆成功');
 	}
+	
+	/**
+	 * @title 个人资料
+     * @desc  (个人资料)
+	 
+	 * @input {"name":"id","require":"true","type":"int","desc":"用户id"}	
+	 
+	 * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
+     * @output {"name":"msg","type":"string","desc":"信息说明"}
+	 * @output {"name":"data.id","require":"true","type":"int","desc":"用户id"}	
+	 * @output {"name":"data.real_name","require":"true","type":"string","desc":"用户真实名字"}	
+	 * @output {"name":"data.head_icon","require":"true","type":"string","desc":"用户头像"}	
+	 * @output {"name":"data.pwd","require":"true","type":"string","desc":"用户密码"}	
+	 * @output {"name":"data.pwd_second","require":"true","type":"string","desc":"用户二次密码"}	
+	 * @output {"name":"data.china_id","require":"true","type":"int","desc":"用户id"}	
+	 * @output {"name":"data.referee_id","require":"true","type":"int","desc":"推荐人id"}	
+	 * @output {"name":"data.member_lvl","require":"true","type":"int","desc":"用户级别"}	
+	 * @output {"name":"data.profit_lvl","require":"true","type":"int","desc":"用户收益级别"}	
+	 * @output {"name":"data.is_valid","require":"true","type":"int","desc":"是否认证"}	
+	 * @output {"name":"data.alipay_id","require":"true","type":"string","desc":"支付账号"}	
+	 * @output {"name":"data.alipay_qrcode","require":"true","type":"string","desc":"支付二维码"}	
+	 * @output {"name":"data.mobile","require":"true","type":"string","desc":"手机号"}	
+	 * @output {"name":"data.user_name","require":"true","type":"string","desc":"用户名"}	
+	 * @output {"name":"data.create_date","require":"true","type":"date","desc":"创建时间"}	
+	 * @output {"name":"data.modify_date","require":"true","type":"date","desc":"更新时间"}	
+	 * @output {"name":"data.referee_mobile","require":"true","type":"string","desc":"推荐人手机号"}	
+	 */
+	public function getMemberInfo(){
+		$id = trim($this->input->post('id'));
+		//$id = 2;
+		$data=$this->member_model->getwhereRow(['id'=>$id],'*');
+		if(!empty($data)){
+		$data['referee_mobile']=$this->member_model->getwhereRow(['id'=>$data['referee_id']],'mobile')['mobile'];
+		}
+		show200($data);
+	}	
+	
 }
