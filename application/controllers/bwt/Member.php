@@ -8,7 +8,7 @@ class Member extends CI_Controller
     {
         parent::__construct();  
 		 $this->load->library(array('sms/api_demo/SmsDemo','weixin/wechatCallbackapiTest'));
-		$this->load->model(array('member_model','user_model'));		
+		$this->load->model(array('member_model'));		
     }	
 	 /**
 	 * @title 用户注册
@@ -163,6 +163,181 @@ class Member extends CI_Controller
             show300('发送失败');
         }
     }
+	 /**
+	 * @title 忘记二次密码
+     * @desc  (用户找回二次密码)
+	 
+	 * @input {"name":"mobile","require":"true","type":"int","desc":"手机号"}	
+	 * @output {"name":"data.pwd_second","require":"true","type":"int","desc":"用户二次密码"}
+	 * @input {"name":"pwd_second_again","require":"true","type":"int","desc":"确认二次密码"}	
+	 
+	 * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
+     * @output {"name":"msg","type":"string","desc":"信息说明"}
+	 */		
+	public function backPwd(){
+		$mobile = trim($this->input->post('mobile'));
+		$yzm = trim($this->input->post('yzm'));
+		$pwd_second = trim($this->input->post('pwd_second'));
+		$pwd_second_again = trim($this->input->post('pwd_second_again'));		
+		
+		$mobile = '17681888141';
+		$yzm =666 ;
+		$this->session->set_tempdata('yzm',$yzm,60);
+		$pwd = '66666666';
+		$pwd_again = '66666666';		
+		
+		if(!$mobile){
+            show300('手机号不能为空');
+        }
+        if(!$yzm){
+            show300('验证码不能为空');
+        }
+		if(!$pwd_second){
+            show300('二次密码不能为空');
+        }
+		if(!$pwd_second_again){
+            show300('确认二次密码不能为空');
+        }
+		if($pwd_second!=$pwd_second_again){
+            show300('两次登录密码不一致');
+        }
+		if (empty($this->session->tempdata('yzm'))){
+            show300('验证码失效，请重新发送');
+        }
+		$user_pad=$this->member_model->getwhereRow(['mobile'=>$mobile],'pwd_second,id');
+		if(empty($user_pad)){
+			 show300('您还不是会员，请先注册');
+		}
+		if($yzm==$this->session->tempdata('yzm')){
+			$mem['pwd_second']=$pwd_second;
+			$res=$this->member_model->updateWhere(['id'=>$user_pad['id']],$mem);
+			if(!$res){
+				show300('更新失败');
+			}else{
+				show200('已更改');
+			}
+		}else{
+			show300('验证码输入错误');
+		}
+	}	
+	 /**
+	 * @title 忘记密码
+     * @desc  (用户找回密码)
+	 
+	 * @input {"name":"mobile","require":"true","type":"int","desc":"手机号"}	
+	 * @input {"name":"pwd","require":"true","type":"int","desc":"登陆密码"}	
+	 * @input {"name":"pwd_again","require":"true","type":"int","desc":"确认登陆密码"}		
+	 
+	 * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
+     * @output {"name":"msg","type":"string","desc":"信息说明"}
+	 */		
+	public function backPwdSecond(){
+		$mobile = trim($this->input->post('mobile'));
+		$yzm = trim($this->input->post('yzm'));
+		$pwd = trim($this->input->post('pwd'));
+		$pwd_again = trim($this->input->post('pwd_again'));		
+		
+		$mobile = '17681888141';
+		$yzm =666 ;
+		$this->session->set_tempdata('yzm',$yzm,60);
+		$pwd = '66666666';
+		$pwd_again = '66666666';		
+		
+		if(!$mobile){
+            show300('手机号不能为空');
+        }
+        if(!$yzm){
+            show300('验证码不能为空');
+        }
+		if(!$pwd){
+            show300('登录密码不能为空');
+        }
+		if(!$pwd_again){
+            show300('确认登录密码不能为空');
+        }
+		if($pwd!=$pwd_again){
+            show300('两次登录密码不一致');
+        }
+		if (empty($this->session->tempdata('yzm'))){
+            show300('验证码失效，请重新发送');
+        }
+		$user_pad=$this->member_model->getwhereRow(['mobile'=>$mobile],'pwd,id');
+		if(empty($user_pad)){
+			 show300('您还不是会员，请先注册');
+		}
+		if($yzm==$this->session->tempdata('yzm')){
+			$mem['pwd']=$pwd;
+			$res=$this->member_model->updateWhere(['id'=>$user_pad['id']],$mem);
+			if(!$res){
+				show300('更新失败');
+			}else{
+				show200('已更改');
+			}
+		}else{
+			show300('验证码输入错误');
+		}
+	}	
+	 /**
+     *@title 获取验证码
+     *@desc 获取验证码
+     *
+     *@output {"name":"code","type":"int","desc":"200:发送成功,300各种提示信息"}
+     *@output {"name":"msg","type":"string","desc":"信息说明"}
+     *
+     *@output {"name":"data.loginYzm","type":"string","desc":"登陆验证码4"}
+     * */
 	
+	public function getLoginYzm(){
+		$str='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';		
+		$loginYzm = ""; 
+		for ( $i = 0; $i < YAMLENGTH; $i++ ) { 
+		$loginYzm .= $str[ mt_rand(0, strlen($str) - 1) ]; 
+		} 
+		$this->session->set_tempdata('loginYzm',$loginYzm,300);
+		show200(['loginYzm'=>$loginYzm],'获取成功');
+	}
 	
+	 /**
+	 * @title 用户登陆
+     * @desc  (用户登陆)
+	 
+	 * @input {"name":"mobile","require":"true","type":"int","desc":"手机号"}	
+	 * @input {"name":"yzm","require":"true","type":"int","desc":"登陆验证码4"}	
+	 * @input {"name":"pwd","require":"true","type":"int","desc":"登陆密码"}	
+	 
+	 * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
+     * @output {"name":"msg","type":"string","desc":"信息说明"}
+	 * @output {"name":"data.id","require":"true","type":"int","desc":"用户id"}	
+	 */
+	public function login(){
+		$mobile = trim($this->input->post('mobile'));
+		$loginYzm = trim($this->input->post('loginYzm'));
+		$pwd = trim($this->input->post('pwd'));
+		
+		$mobile = '17681888141';
+		$loginYzm = 'wThR';
+		$pwd = '123456';
+		if(!$mobile){
+            show300('手机号不能为空');
+        }
+        if(!$loginYzm){
+            show300('验证码不能为空');
+        }
+		if(!$pwd){
+            show300('登录密码不能为空');
+        }
+		//print_r($this->session->tempdata('loginYzm'));exit;
+		if($this->session->tempdata('loginYzm')!=$loginYzm ){
+			 show300('验证码错误');
+		}
+		$user_pad=$this->member_model->getwhereRow(['mobile'=>$mobile],'pwd,id');
+		//$data['id']=$user_pad['id'];
+		if(empty($user_pad)){
+			 show300('您还不是会员，请先注册');
+		}
+		if($pwd!=$user_pad['pwd'] ){
+			 show300('密码错误');
+		}
+		show200(['id'=>$user_pad['id']],'登陆成功');
+	}
 }
