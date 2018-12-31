@@ -379,6 +379,76 @@ class Member extends CI_Controller
 		$data['referee_mobile']=$this->member_model->getwhereRow(['id'=>$data['referee_id']],'mobile')['mobile'];
 		}
 		show200($data);
+	}
+public function certification(){
+		/*$requires = array("id"=>"缺少会员id","id_photo"=>"缺少身份证正面照","alipay_id"=>"缺少支付宝号","alipay_qrcode"=>"缺少支付宝二维码");
+		$params = array();
+        foreach($requires as $k => $v)
+        {
+            if(empt($this->input->post($k))){
+                show300($v);
+            }
+            $params[$k] = trim($this -> input -> post($k));
+        }*/
+		
+		$id = trim($this->input->post('id'));//用户id
+		$id_photo = trim($this->input->post('id_photo'));//身份证正面图片
+		$alipay_id = trim($this->input->post('alipay_id'));//支付宝号
+		$alipay_qrcode = trim($this->input->post('alipay_qrcode'));//支付宝二维码
+		//模拟数据
+		$id = 2;
+		$id_photo = 'dsgdfgfdgfd';
+		$alipay_id = '17681888141';
+		$alipay_qrcode = 'dsfagasdagvsd';
+		//此处需要通过证件照获取用户身份证号和姓名
+		$data['china_id']='142201199205154021';
+		$data['real_name']='郭丽琴';
+		
+		if(empty($id)){
+            show300('会员id不能为空');
+        }
+		if(empty($id_photo)){
+            show300('证件照不能为空');
+        }
+		if(empty($alipay_id)){
+            show300('支付宝号不能为空');
+        }
+		if(empty($alipay_qrcode)){
+            show300('支付宝二维码不能为空');
+        }
+		
+		$mem['id_photo']=$id_photo;
+		$mem['alipay_id']=$alipay_id;
+		$mem['alipay_qrcode']=$alipay_qrcode;
+		$mem['china_id']=$data['china_id'];//通过证件照访问接口获取身份证号和名称；
+		$mem['real_name']=$data['real_name'];//通过证件照访问接口获取身份证号和名称；
+		$referee_id=$this->member_model->getwhereRow(['id'=>$id],'referee_id');
+		
+		//根据推荐人的id查询他名下有几个直推0级用户
+		
+		$num=$this->member_model->gRefNum($referee_id['referee_id']);
+		//print_r($num);exit;
+		if($num==9){
+			//推荐人升为1级
+			$refData['member_lvl']=1;
+			$lvl_res=$this->member_model->updateWhere(['id'=>$referee_id['referee_id']],$refData);
+			
+			//此处升级关系到其他用户的级别   ？关系不清，待定
+			//print_r($lvl_res);exit;
+		}
+		
+		$mem['referee_id']=$referee_id['referee_id'];
+		
+		//根据推荐人id判定是否要升级
+		
+		$mem['is_valid']=1;//是否认证
+		
+		echo "<pre>";
+		print_r($mem);exit;
+		
+		$resf_res=$this->member_model->updateWhere(['id'=>$id],$mem);
+		
+		
 	}	
 	
 }
