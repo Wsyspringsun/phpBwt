@@ -96,5 +96,6 @@ define('PAGEJS',_PUBLIC.'admin/pagejs/');       //public/admin/pagejs,相前页�
 define('SITENAME','比特币项目');       //站点名称
 define('PAGESIZE',10);       //全站基本每页条目数量
 define('HOMEMACHINE',5);       //站点名称
+define('ORIGIN_BILL_SALE_MAX',150);       //可卖出的静态额度
 
 

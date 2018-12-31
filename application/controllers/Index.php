@@ -10,19 +10,13 @@ class Index extends CI_Controller
     }
     public function index()
     {
-        //echo 'Welcome wsy to'.SITENAME;
-
-        //$mid = 12;
-        //$ms = explode('\.',time().'');
-        //var_dump($ms);
-        //echo 'time:'.time();
-        //echo microtime();
-        //$n = date("Y m d H i s",time());
-        //echo $n;
-        list($t1, $t2) = explode(' ', microtime());
-        echo date("Y m d H i s",floatval($t2)).'\n';
-        echo intval(floatval($t1) * 1000);
-        //echo (float)sprintf('%.0f', (floatval($t1) + floatval($t2)) * 1000);
+        define('ORIGIN_BILL_STATS',array(
+            "A" => "001"
+        )) ;
+        $arr = explode('-', '0-0-0-0');
+        var_dump($arr) ;
+        echo count($arr);
+        echo array_keys(ORIGIN_BILL_STATS)[0];
     }
 	public function test(){
 		

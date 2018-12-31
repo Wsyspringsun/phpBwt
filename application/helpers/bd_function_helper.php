@@ -423,5 +423,15 @@ function get_bill_unique_id($member_id){
     return $val;
 }
 
+//获取原始资产交易订单的指定步骤的状态,$phase:步骤
+function get_stat_code($stat,$phase){
+    $arr = explode('-',$stat);
+    $len = count($arr);
+    if($len < $phase)
+        return -1;
+    return $arr[$phase - 1];
+
+}
+
 
 /* End */

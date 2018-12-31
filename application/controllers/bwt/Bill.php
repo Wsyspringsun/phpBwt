@@ -100,7 +100,7 @@ class Bill extends CI_Controller
             $params[$k] = $this -> input -> post($k);
         }
         $data = $this -> bill_model -> buyOriginRes($params);
-        if($data == true){
+        if($data > 0){
             show200($data);
         }else{
             show300($data);
@@ -128,14 +128,89 @@ class Bill extends CI_Controller
             $params[$k] = $this -> input -> post($k);
         }
         $data = $this -> bill_model -> sale2BuyBillOriginRes($params);
-        if($data == true){
+        if($data > 0){
             show200($data);
+            //TODO:给买家发送短信
         }else{
             show300($data);
         }
     }
 
+    /**
+    * @title 支付宝付款成功后嗲用的回执
+    * @desc  用户向支付宝付款，上传付款成功截图，核准付款成功
+    * @input {"name":"origin_bill_id","require":"true","type":"int","desc":"原始资产业务订单的id"}
+    * @input {"name":"pic_dir","require":"true","type":"string","desc":"图片凭据地址"}
+    * @input {"name":"thirdpart_bill_no","require":"true","type":"string","desc":"第三方单据凭据"}
+    * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
+    * @output {"name":"msg","type":"string","desc":"信息说明"}
+    * @output {"name":"data","type":"int","desc":"生成的订单id"}
+    **/
+    public function pay_4_bill_origin_res()
+    {
+        $requires = array("origin_bill_id" => "缺少原始资产业务订单的id","pic_dir" => "缺少图片地址","thirdpart_bill_no" => "缺少第三方订单标号凭据");
+        $params = array();
+        foreach($requires as $k => $v)
+        {
+            if($this->input->post($k) == null){
+                show300($v);
+            }
+            $params[$k] = $this -> input -> post($k);
+        }
+        $data = $this -> bill_model -> payed4BillOriginRes($params);
+        if($data > 0 ){
+            show200($data);
+        }else{
+            show300($data);
+        }
 
+    }
+
+    /**
+    * @title 卖出原始资产确认
+    * @desc  收到买家付款后，进行确认，确认后将放币
+    * @input {"name":"origin_bill_id","require":"true","type":"int","desc":"原始资产业务订单的id"}
+    **/
+    public function payed_confirm_4_bill_origin_res()
+    {
+        //TODO:获取登录用户，没有登录用户则推出
+        $loginer_id = 1;
+
+        $requires = array("origin_bill_id" => "缺少原始资产业务订单的id");
+        $params = array();
+        foreach($requires as $k => $v)
+        {
+            if($this->input->post($k) == null){
+                show300($v);
+            }
+            $params[$k] = $this -> input -> post($k);
+        }
+        $data = $this -> bill_model -> payedConfirm4BillOriginRes($params);
+        if($data > 0 ){
+            show200($data);
+        }else{
+            show300($data);
+        }
+
+    }
+
+
+    /**
+    * @title 获取原始资源交易单列表
+    * @desc  获取原始资源交易单列表
+    **/
+    public function bill_origin_res_list()
+    {
+        if(empty($this->input->post('member_id')))
+        {
+            show300('缺少会员id');
+        }
+        $page = $this->input->post('page') == null ? 1 : $this->input->post('page');
+        $offset = $this -> getPage($page,PAGESIZE) ;
+        $member_id = $this->input->post('member_id');
+
+        return $this -> bill_model -> origin_bill_res_list($params);
+    }
 
     /** 处理交易原始资产相关数据 End **/
 
