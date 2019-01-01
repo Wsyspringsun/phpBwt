@@ -380,8 +380,29 @@ class Member extends CI_Controller
 		}
 		show200($data);
 	}
-public function certification(){
-		/*$requires = array("id"=>"缺少会员id","id_photo"=>"缺少身份证正面照","alipay_id"=>"缺少支付宝号","alipay_qrcode"=>"缺少支付宝二维码");
+	/**
+	 * @title 认证接口
+     * @desc  (认证接口)
+	 
+	 * @input {"name":"id","require":"true","type":"int","desc":"用户id"}	
+	 * @input {"name":"id_photo_positive","require":"true","type":"int","desc":"身份证正面图片"}	
+	 * @input {"name":"id_photo_reverse","require":"true","type":"int","desc":"身份证反面图片"}	
+	 * @input {"name":"id_photo_unity","require":"true","type":"int","desc":"身份证人像图片"}	
+	 * @input {"name":"china_id","require":"true","type":"int","desc":"身份证号"}	
+	 * @input {"name":"alipay_id","require":"true","type":"int","desc":"支付宝号"}	
+	 * @input {"name":"alipay_qrcode","require":"true","type":"int","desc":"支付宝二维码"}	
+	 * @input {"name":"real_name","require":"true","type":"int","desc":"真实名字"}	
+	 
+	 * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
+     * @output {"name":"msg","type":"string","desc":"信息说明"}	 
+	 */
+	
+	
+	
+	public function certification(){
+		/*$requires = array("id"=>"缺少会员id","id_photo_positive"=>"缺少身份证正面照","id_photo_reverse"=>"缺少身份证反面照",
+					"id_photo_unity"=>"缺少人像图片","china_id"=>"缺少身份证号","alipay_id"=>"缺少支付宝号","alipay_qrcode"=>"缺少支付宝收款码",
+					"id_photo_unity"=>"缺少名称",);
 		$params = array();
         foreach($requires as $k => $v)
         {
@@ -390,65 +411,91 @@ public function certification(){
             }
             $params[$k] = trim($this -> input -> post($k));
         }*/
-		
 		$id = trim($this->input->post('id'));//用户id
-		$id_photo = trim($this->input->post('id_photo'));//身份证正面图片
+		$id_photo_positive = trim($this->input->post('id_photo_positive'));//身份证正面图片
+		$id_photo_reverse = trim($this->input->post('id_photo_reverse'));//身份证反面图片
+		$id_photo_unity = trim($this->input->post('id_photo_unity'));//身份证人像图片
+		$china_id = trim($this->input->post('china_id'));//身份证号
 		$alipay_id = trim($this->input->post('alipay_id'));//支付宝号
 		$alipay_qrcode = trim($this->input->post('alipay_qrcode'));//支付宝二维码
+		$real_name = trim($this->input->post('real_name'));//真实名字
+		
 		//模拟数据
-		$id = 2;
-		$id_photo = 'dsgdfgfdgfd';
+		$params['id'] = 2;
+		$params['alipay_id'] = '17681888141';
+		$params['id_photo_positive'] = 'dsfagasdagvsd';
+		$params['id_photo_reverse'] = 'dsfagasdagvsd';
+		$params['id_photo_unity'] = 'dsfagasdagvsd';
+		$params['alipay_qrcode'] = 'dsfagasdagvsd';
+		$params['china_id']='142201199205154021';
+		$params['real_name']='郭丽琴';
+		$id = $params['id'];
+		/*$id = 2;
 		$alipay_id = '17681888141';
+		$id_photo_positive = 'dsfagasdagvsd';
+		$id_photo_reverse = 'dsfagasdagvsd';
+		$id_photo_unity = 'dsfagasdagvsd';
 		$alipay_qrcode = 'dsfagasdagvsd';
-		//此处需要通过证件照获取用户身份证号和姓名
-		$data['china_id']='142201199205154021';
-		$data['real_name']='郭丽琴';
+		$china_id='142201199205154021';
+		$real_name='郭丽琴';
 		
 		if(empty($id)){
             show300('会员id不能为空');
         }
-		if(empty($id_photo)){
-            show300('证件照不能为空');
+		if(empty($id_photo_positive)){
+            show300('身份证正面照不能为空');
         }
-		if(empty($alipay_id)){
-            show300('支付宝号不能为空');
+		if(empty($id_photo_reverse)){
+            show300('身份证反面照不能为空');
+        }
+		if(empty($id_photo_unity)){
+            show300('证件照人像不能空');
+        }
+		if(empty($china_id)){
+            show300('身份证号不能为空');
         }
 		if(empty($alipay_qrcode)){
             show300('支付宝二维码不能为空');
         }
+		if(empty($alipay_id)){
+            show300('支付宝号不能为空');
+        }
+		if(empty($real_name)){
+            show300('名字不能为空');
+        }*/
+		//此处根据支付宝号判断有效性；
 		
-		$mem['id_photo']=$id_photo;
+		/*$mem['id_photo_positive']=$id_photo_positive;
+		$mem['id_photo_reverse']=$id_photo_reverse;
+		$mem['id_photo_unity']=$id_photo_unity;
 		$mem['alipay_id']=$alipay_id;
 		$mem['alipay_qrcode']=$alipay_qrcode;
-		$mem['china_id']=$data['china_id'];//通过证件照访问接口获取身份证号和名称；
-		$mem['real_name']=$data['real_name'];//通过证件照访问接口获取身份证号和名称；
-		$referee_id=$this->member_model->getwhereRow(['id'=>$id],'referee_id');
+		$mem['china_id']=$china_id;//通过证件照访问接口获取身份证号和名称；
+		$mem['real_name']=$real_name;//通过证件照访问接口获取身份证号和名称；*/
 		
-		//根据推荐人的id查询他名下有几个直推0级用户
 		
-		$num=$this->member_model->gRefNum($referee_id['referee_id']);
-		//print_r($num);exit;
-		if($num==9){
-			//推荐人升为1级
-			$refData['member_lvl']=1;
-			$lvl_res=$this->member_model->updateWhere(['id'=>$referee_id['referee_id']],$refData);
-			
-			//此处升级关系到其他用户的级别   ？关系不清，待定
-			//print_r($lvl_res);exit;
-		}
+		unset($params['id']);
 		
-		$mem['referee_id']=$referee_id['referee_id'];
+		//echo "<pre>";
+		//print_r($params);exit;
 		
-		//根据推荐人id判定是否要升级
 		
-		$mem['is_valid']=1;//是否认证
 		
-		echo "<pre>";
-		print_r($mem);exit;
+		$referee_id=$this->member_model->updateWhere(['id'=>$id],$params);
+
+		//如果支付宝号验证成功，并且已经认证，调用升级接口
 		
-		$resf_res=$this->member_model->updateWhere(['id'=>$id],$mem);
-		
+		print_r($referee_id);exit;
+	
 		
 	}	
+	
+	
+	public function payMoney(){
+		
+		
+		
+		
+	}
 	
 }
