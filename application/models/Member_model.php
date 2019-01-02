@@ -26,5 +26,11 @@ class Member_model extends MY_Model
 		$this->db->select_min($parm);
 		return $this->db->get($this->table)->row_array();
 	}
+	
+	public function gRefNum($id){
+		$this->db->from($this->table);
+		$this->db->where('referee_id',$id);
+		return $this->db->count_all_results();	
+	}
 }
 ?>
