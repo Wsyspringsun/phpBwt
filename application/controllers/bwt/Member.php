@@ -9,7 +9,7 @@ class Member extends CI_Controller
     {
         parent::__construct();
         $this->load->library(array('sms/api_demo/SmsDemo', 'weixin/wechatCallbackapiTest'));
-        $this->load->model(array('member_model'));
+        $this->load->model(array('member_model', 'machine_model'));
     }
 
     /**
@@ -326,6 +326,9 @@ class Member extends CI_Controller
         $mobile = '17681888141';
         $loginYzm = 'wThR';
         $pwd = '123456';
+
+        $this->session->set_tempdata('loginYzm', $loginYzm, 300);
+
         if (!$mobile) {
             show300('手机号不能为空');
         }
@@ -347,7 +350,10 @@ class Member extends CI_Controller
         if ($pwd != $user_pad['pwd']) {
             show300('密码错误');
         }
-        show200(['id' => $user_pad['id']], '登陆成功');
+        $session_user['id'] = $user_pad['id'];
+        $this->session->set_tempdata($session_user);
+        //print_r($this->session->tempdata('id'));exit;
+        show200('登陆成功');
     }
 
     /**
@@ -384,6 +390,7 @@ class Member extends CI_Controller
         }
         show200($data);
     }
+
 
     /**
      * @title 认证接口
@@ -486,7 +493,7 @@ class Member extends CI_Controller
         $referee_id = $this->member_model->updateWhere(['id' => $id], $params);
 
         //如果支付宝号验证成功，并且已经认证，调用升级接口
-        if ($referee_id) {
+        if($referee_id){
             $this->updateLevel($id);
         }
 
@@ -503,12 +510,32 @@ class Member extends CI_Controller
 
     }
 
-    public function updateLevel($id = '')
+
+    public function test()
+    {
+
+
+        $this->member_model->start();
+        $mem['real_name'] = '郭丽琴';
+        $res1 = $this->member_model->updateWhere(['id' => 1], $mem);
+        //print_r($res1);exit;
+        $machine['title'] = '测试';
+        $res2 = $this->machine_model->updateWhere(['id' => 1], $machine);
+        //print_r($res2);exit;
+        if ($res1 && $res2) {
+            $this->member_model->commit();
+        } else {
+            $this->member_model->rollback();
+        }
+    }
+
+    //升级会员等级判断
+    public function updateLevel($id)
     {
         if (!$id) {
             show300('会员id不能为空');
         }
-        $ids = $this->member_model->getSup($id , $n = 0);
+        $ids = $this->member_model->getSup($id, $n = 0);
         $ids = explode(',', $ids);
         $where['is_valid'] = 1;
         $where_in = [
@@ -555,5 +582,6 @@ class Member extends CI_Controller
 
         return true;
     }
+
 
 }
