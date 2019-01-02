@@ -249,6 +249,6 @@ class MY_Model extends CI_Model
 	//事务开始
 	public function start()
 	{
-		return $this->db->trans_start();
+		return $this->db->trans_begin();
 	}
 }
