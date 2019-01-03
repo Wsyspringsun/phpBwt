@@ -9,7 +9,7 @@ class Member extends CI_Controller
     {
         parent::__construct();
         $this->load->library(array('sms/api_demo/SmsDemo', 'weixin/wechatCallbackapiTest'));
-        $this->load->model(array('member_model', 'machine_model','member_resouce_model'));
+        $this->load->model(array('member_model', 'machine_model', 'member_resouce_model'));
     }
 
     /**
@@ -36,14 +36,14 @@ class Member extends CI_Controller
         $pwd_second_again = trim($this->input->post('pwd_second_again'));
         $referee_mobile = trim($this->input->post('referee_mobile'));
 
-       /* $mobile = '17681876666';
-        $yzm = 666;
-        $this->session->set_tempdata('yzm', $yzm, 60);
-        $pwd = 123456;
-        $pwd_again = 123456;
-        $pwd_second = 123456;
-        $pwd_second_again = 123456;
-        $referee_mobile = '18335018141';*/
+        /* $mobile = '17681876666';
+         $yzm = 666;
+         $this->session->set_tempdata('yzm', $yzm, 60);
+         $pwd = 123456;
+         $pwd_again = 123456;
+         $pwd_second = 123456;
+         $pwd_second_again = 123456;
+         $referee_mobile = '18335018141';*/
         if (!$yzm) {
             show300('验证码不能为空');
         }
@@ -128,7 +128,7 @@ class Member extends CI_Controller
 
     public function getMyInfo()
     {
-		$id=$this->session->tempdata('id');
+        $id = $this->session->tempdata('id');
         if (empty($id)) {
             show300('会员id不能为空');
         }
@@ -375,7 +375,7 @@ class Member extends CI_Controller
      */
     public function getMemberInfo()
     {
-       $id=$this->session->tempdata('id');
+        $id = $this->session->tempdata('id');
         if (empty($id)) {
             show300('会员id不能为空');
         }
@@ -390,7 +390,7 @@ class Member extends CI_Controller
     //升级会员等级判断
     public function updateLevel($id)
     {
-		//print_r($id);exit;
+        //print_r($id);exit;
         if (!$id) {
             show300('会员id不能为空');
         }
@@ -402,10 +402,7 @@ class Member extends CI_Controller
             'data' => $ids
         ];
         $data = $this->member_model->getWhere($where, $select = '*', $dbArray = [], $where_in);
-		//echo "<pre>";
-		//print_r($data);exit;
         if (!empty($data)) {
-
             foreach ($data as $val) {
                 switch ($val['member_lvl']) {
                     case "1":
@@ -416,21 +413,12 @@ class Member extends CI_Controller
                 }
                 $cWhere = [
                     'is_valid' => 1,
+                    'referee_id' => $val['id'],
                     'member_lvl' => $val['member_lvl']
 
                 ];
-                //获取所有子集id
-                $childs = $this->member_model->getChild($val['id']);
-                $childs = explode(",", $childs);
-                //去除数组第一个元素
-                array_shift($childs);
 
-                $whereIn = [
-                    'field' => 'id',
-                    'data' => $childs
-                ];
-                //查询邀请人不同的子集数
-                $count = $this->member_model->getRefereeNum($cWhere, $dbArray = [], $whereIn);
+                $count = $this->member_model->getWhere_num($cWhere);
                 //升级
                 if ($count >= $num) {
                     $update['member_lvl'] = $val['member_lvl'] + 1;
