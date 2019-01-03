@@ -63,6 +63,8 @@ class Member_model extends MY_Model
     public function getSup($id, $n = 0)
     {
         $res = $this->db->select('referee_id')->get_where($this->table, ['id' => $id], 1)->row()->referee_id;
+		//echo "<rpe>";
+		//print_r($res);exit;
 
         $ids = '';
         if ($res) {
@@ -75,6 +77,8 @@ class Member_model extends MY_Model
             $n++;
             $ids .= $this->getSup($res, $n);
         }
+		//echo "<pre>";
+		//print_r($ids);exit;
         return $ids;
     }
 
