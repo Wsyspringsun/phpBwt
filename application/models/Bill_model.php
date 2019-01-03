@@ -10,6 +10,7 @@ class Bill_model extends MY_Model
     private $tbl_origin_res_buy_bill ='origin_res_buy_bill';//原始资产买入下单表
     private $tbl_origin_res_sale_bill ='origin_res_sale_bill';//原始资产卖出下单表
     private $tbl_origin_res_pay_bill ='origin_res_pay_bill';//原始资产卖出下单表
+    private $tbl_key_val_params ='key_val_params';//各种参数数据对照表
 
     public function __construct()
     {
@@ -19,6 +20,9 @@ class Bill_model extends MY_Model
         parent::__construct($this->tbl_origin_res_buy_bill);
         parent::__construct($this->tbl_origin_res_sale_bill);
         parent::__construct($this->tbl_origin_res_pay_bill);
+        parent::__construct($this->tbl_key_val_params);
+
+	$this->load->model(array('member_model'));		
     }
 
     /** 处理矿机订单Start **/
@@ -75,7 +79,7 @@ class Bill_model extends MY_Model
         //更新会员资源数据
         $this -> db -> where("id",$member_id);
         $this -> db -> update($this -> tbl_member_resouce,$mem_bill_outline);
-        $this->db->trans_commit();
+        $this->db->trans_complete();
 
         if ($this->db->trans_status() === FALSE)
         {
@@ -189,6 +193,9 @@ class Bill_model extends MY_Model
         if($buy_bill === null){
             return "买入单不存在";
         }
+        if($buy_bill -> stat!= '0'){
+            return "此订单已经被卖出";
+        }
 
         $amount = $buy_bill -> amount;
         $unit_price = $buy_bill -> unit_price;
@@ -213,8 +220,8 @@ class Bill_model extends MY_Model
         if($member_res -> tradeable_amount < $pay_amount){
             return "您的可交易资产数目".$member_res -> tradeable_amount."小于要购买的额度:".$amount;
         }
-        //TODO:扣除卖家手续费
-        $tax = $amount * 0.3;
+        //扣除卖家手续费
+        $tax = $this -> origin_bill_res_tax($sale_member_id, $amount);
 
         $sale_data = array(
             'sale_member_id' => $sale_member_id,
@@ -250,12 +257,13 @@ class Bill_model extends MY_Model
         $this -> db -> insert($this -> tbl_origin_res_bill,$data);
         $origin_res_bill_id = $this->db->insert_id();
 
-        $this->db->trans_commit();//提交事务
+        $this->db->trans_complete();//提交事务
 
         if ($this->db->trans_status() === FALSE)
         {
+            $this ->db -trans_rollback();
             return "事务执行失败";
-        }
+        } 
         return $origin_res_bill_id;
     }
 
@@ -283,7 +291,7 @@ class Bill_model extends MY_Model
         $this -> db -> where ('id', $origin_bill_id);
         $this -> db -> update($this -> tbl_origin_res_bill,$origin_bill);
 
-        $this->db->trans_commit();
+        $this->db->trans_complete();
         if ($this->db->trans_status() === FALSE)
         {
             return "事务执行失败";
@@ -335,7 +343,7 @@ echo $sql_update_buy;
         $this -> db -> query($sql_update_sale);
 echo $sql_update_sale;
 
-        $this->db->trans_commit();
+        $this->db->trans_complete();
 
         if ($this->db->trans_status() === FALSE)
         {
@@ -350,6 +358,17 @@ echo $sql_update_sale;
     {
         return $this -> db -> order_by('create_date DESC') -> limit(PAGESIZE,$offset) -> get_where($this -> tbl_origin_res_buy_bill, array('buy_member_id' => $member_id, 'stat' => '0'))->result();
     }
+
+    //获取卖出原始资产应付手续费
+    public function origin_bill_res_tax($sale_member_id, $buy_amount){
+        $member = $this->member_model->getwhereRow(['id' => $sale_member_id],'*');
+        $profit_lvl = $member["profit_lvl"] ;
+        //对照表
+        $tax_row = $this -> db -> get_where($this -> tbl_key_val_params, ["params_type" => "1", "params_key" => $profit_lvl]) -> row_array();
+        $params_val = (float)$tax_row["params_val"];
+        return $buy_amount * $params_val;
+    }
+
 
     //获取卖出原始资产表
     public function sale_origin_bill_res_list($offset, $member_id)

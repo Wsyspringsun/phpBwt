@@ -1,13 +1,18 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
+/**
+* @title 处理各种订单业务
+* @desc  处理各种订单业务
+**/
 class Bill extends CI_Controller 
 {
     private static $data = array();
     public function __construct()
     {
         parent::__construct();  
-	$this->load->model(array('bill_model'));		
+	$this->load->model(array('bill_model','member_model'));		
+        $this->load->library(array('sms/api_demo/SmsDemo','weixin/wechatCallbackapiTest'));
     }
 
     /** 处理矿机订单Start **/
@@ -160,8 +165,16 @@ class Bill extends CI_Controller
         }
         $data = $this -> bill_model -> sale2BuyBillOriginRes($params);
         if($data > 0){
+            //TODO:给买家发送短信,使用自己号码测试     
+            //$sms = new SmsDemo();
+            //$res = $sms->sendSms('13203561153', SMS_ID, SMS_SIGN,['code'=>'你好，这是测试内容']);
+            //if($res->Code=='OK'){            
+                //echo '发送成功';
+            //}else{
+                //echo '发送失败';
+            //}
+
             show200($data);
-            //TODO:给买家发送短信
         }else{
             show300($data);
         }
@@ -316,10 +329,49 @@ class Bill extends CI_Controller
         $data =  $this -> bill_model -> origin_bill_res_detail($type, $loginer_id, $id);
         if(is_string($data)){
             show300($data);
+        }else if($data == null){
+            show300('数据不存在');
+        }else{
+            $buy_member = $this->member_model->getwhereRow(['id' => $data -> buy_member_id],'*');
+            $sale_member = $this->member_model->getwhereRow(['id' => $data -> sale_member_id],'*');
+            $data -> buy_member = array(
+                "mobile" => $buy_member["mobile"],
+                "user_name" => $buy_member["user_name"] ,
+            );
+            $data -> sale_member = array(
+                "mobile" => $sale_member["mobile"],
+                "user_name" => $sale_member["user_name"] ,
+                "alipay_qrcode" => $sale_member["alipay_qrcode"] 
+            ); 
+            show200($data);
+        }
+    }
+
+    /**
+    * @title 获取原始资源交易手续费
+    * @desc  获取原始资源交易手续费
+    * @input {"name":"buy_amount","require":"true","type":"int","desc":"买入数量"}
+    **/
+    public function bill_origin_res_tax()
+    {
+        $loginer_id = 2;
+        $requires = array("buy_amount" => "缺少买入数量");
+        $params = array();
+        foreach($requires as $k => $v)
+        {
+            if($this->input->post($k) == null){
+                show300($v);
+            }
+            $params[$k] = $this -> input -> post($k);
+        }
+        $data = $this -> bill_model -> origin_bill_res_tax($loginer_id, $params["buy_amount"]);
+        if(is_string($data)){
+            show300($data);
         }else{
             show200($data);
         }
     }
+
 
 
     /** 处理交易原始资产相关数据 End **/
@@ -353,6 +405,7 @@ class Bill extends CI_Controller
         $data = $this -> bill_model -> getBillOutline($id);
         show200($data);
     }
+
     /*** 处理获取个人资产汇总相关数据End **/
 	
 }

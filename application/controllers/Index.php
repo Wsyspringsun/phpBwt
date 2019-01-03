@@ -7,20 +7,22 @@ class Index extends CI_Controller
     public function __construct()
     {
         parent::__construct();        
+		 $this->load->library(array('sms/api_demo/SmsDemo','weixin/wechatCallbackapiTest'));
     }
     public function index()
     {
-        define('ORIGIN_BILL_STATS',array(
-            "A" => "001"
-        )) ;
-        $arr = explode('-', '0-0-0-0');
-        var_dump($arr) ;
-        echo count($arr);
-        echo array_keys(ORIGIN_BILL_STATS)[0];
+        $sms = new SmsDemo();
+        $res = $sms->sendSms('13203561153', SMS_ID, SMS_SIGN,['code'=>'你好，这是测试内容']);
+        if($res->Code=='OK'){            
+            echo '发送成功';
+        }else{
+            echo '发送失败';
+        }
     }
-	public function test(){
-		
-		echo "wsy测试成功";
-	
-	}
+
+    public function test(){
+            
+            echo "wsy测试成功";
+    
+    }
 }
