@@ -9,7 +9,7 @@ class Member extends CI_Controller
     {
         parent::__construct();
         $this->load->library(array('sms/api_demo/SmsDemo', 'weixin/wechatCallbackapiTest'));
-        $this->load->model(array('member_model', 'machine_model'));
+        $this->load->model(array('member_model', 'machine_model','member_resouce_model'));
     }
 
     /**
@@ -36,14 +36,14 @@ class Member extends CI_Controller
         $pwd_second_again = trim($this->input->post('pwd_second_again'));
         $referee_mobile = trim($this->input->post('referee_mobile'));
 
-        $mobile = '17681888141';
+       /* $mobile = '17681876666';
         $yzm = 666;
         $this->session->set_tempdata('yzm', $yzm, 60);
         $pwd = 123456;
         $pwd_again = 123456;
         $pwd_second = 123456;
         $pwd_second_again = 123456;
-        $referee_mobile = '17681888141';
+        $referee_mobile = '18335018141';*/
         if (!$yzm) {
             show300('验证码不能为空');
         }
@@ -106,7 +106,7 @@ class Member extends CI_Controller
             }
             $res = $this->member_model->insert($mem);
             if ($res) {
-                show200(['id' => $res], '注册成功');
+                show200('注册成功');
             } else {
                 show300('注册失败');
             }
@@ -118,7 +118,6 @@ class Member extends CI_Controller
     /**
      * @title 我的
      * @desc  (点击我的)
-     * @input {"name":"id","require":"true","type":"int","desc":"用户id"}
      * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
      * @output {"name":"msg","type":"string","desc":"信息说明"}
      * @output {"name":"data.id","require":"true","type":"int","desc":"用户id"}
@@ -129,8 +128,7 @@ class Member extends CI_Controller
 
     public function getMyInfo()
     {
-        $id = trim($this->input->post('id'));
-        //$id = 2;
+		$id=$this->session->tempdata('id');
         if (empty($id)) {
             show300('会员id不能为空');
         }
@@ -161,6 +159,7 @@ class Member extends CI_Controller
         $templateId = 'SMS_141945019';   //短信模板ID
         $smsSign = "众合致胜";           // 签名
         $yzm = rand(1000, 9999);           //验证码
+        //$yzm = '8888测999';           //验证码
         $sms = new SmsDemo();
         $res = $sms->sendSms($mobile, $templateId, $smsSign, ['code' => $yzm]);
         if ($res->Code == 'OK') {
@@ -187,13 +186,11 @@ class Member extends CI_Controller
         $yzm = trim($this->input->post('yzm'));
         $pwd_second = trim($this->input->post('pwd_second'));
         $pwd_second_again = trim($this->input->post('pwd_second_again'));
-
-        $mobile = '17681888141';
+        /*$mobile = '17681888141';
         $yzm = 666;
         $this->session->set_tempdata('yzm', $yzm, 60);
         $pwd = '66666666';
-        $pwd_again = '66666666';
-
+        $pwd_again = '66666666';*/
         if (!$mobile) {
             show300('手机号不能为空');
         }
@@ -245,11 +242,11 @@ class Member extends CI_Controller
         $pwd = trim($this->input->post('pwd'));
         $pwd_again = trim($this->input->post('pwd_again'));
 
-        $mobile = '17681888141';
+        /*$mobile = '17681888141';
         $yzm = 666;
         $this->session->set_tempdata('yzm', $yzm, 60);
         $pwd = '66666666';
-        $pwd_again = '66666666';
+        $pwd_again = '66666666';*/
 
         if (!$mobile) {
             show300('手机号不能为空');
@@ -311,7 +308,7 @@ class Member extends CI_Controller
      * @title 用户登陆
      * @desc  (用户登陆)
      * @input {"name":"mobile","require":"true","type":"int","desc":"手机号"}
-     * @input {"name":"yzm","require":"true","type":"int","desc":"登陆验证码4"}
+     * @input {"name":"loginYzm","require":"true","type":"int","desc":"登陆验证码4"}
      * @input {"name":"pwd","require":"true","type":"int","desc":"登陆密码"}
      * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
      * @output {"name":"msg","type":"string","desc":"信息说明"}
@@ -322,13 +319,10 @@ class Member extends CI_Controller
         $mobile = trim($this->input->post('mobile'));
         $loginYzm = trim($this->input->post('loginYzm'));
         $pwd = trim($this->input->post('pwd'));
-
-        $mobile = '17681888141';
+        /*$mobile = '17681876666';
         $loginYzm = 'wThR';
-        $pwd = '123456';
-
+        $pwd = '123456';*/
         $this->session->set_tempdata('loginYzm', $loginYzm, 300);
-
         if (!$mobile) {
             show300('手机号不能为空');
         }
@@ -362,7 +356,6 @@ class Member extends CI_Controller
      * @input {"name":"id","require":"true","type":"int","desc":"用户id"}
      * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
      * @output {"name":"msg","type":"string","desc":"信息说明"}
-     * @output {"name":"data.id","require":"true","type":"int","desc":"用户id"}
      * @output {"name":"data.real_name","require":"true","type":"string","desc":"用户真实名字"}
      * @output {"name":"data.head_icon","require":"true","type":"string","desc":"用户头像"}
      * @output {"name":"data.pwd","require":"true","type":"string","desc":"用户密码"}
@@ -382,8 +375,10 @@ class Member extends CI_Controller
      */
     public function getMemberInfo()
     {
-        $id = trim($this->input->post('id'));
-        //$id = 2;
+       $id=$this->session->tempdata('id');
+        if (empty($id)) {
+            show300('会员id不能为空');
+        }
         $data = $this->member_model->getwhereRow(['id' => $id], '*');
         if (!empty($data)) {
             $data['referee_mobile'] = $this->member_model->getwhereRow(['id' => $data['referee_id']], 'mobile')['mobile'];
@@ -392,146 +387,10 @@ class Member extends CI_Controller
     }
 
 
-    /**
-     * @title 认证接口
-     * @desc  (认证接口)
-     * @input {"name":"id","require":"true","type":"int","desc":"用户id"}
-     * @input {"name":"id_photo_positive","require":"true","type":"int","desc":"身份证正面图片"}
-     * @input {"name":"id_photo_reverse","require":"true","type":"int","desc":"身份证反面图片"}
-     * @input {"name":"id_photo_unity","require":"true","type":"int","desc":"身份证人像图片"}
-     * @input {"name":"china_id","require":"true","type":"int","desc":"身份证号"}
-     * @input {"name":"alipay_id","require":"true","type":"int","desc":"支付宝号"}
-     * @input {"name":"alipay_qrcode","require":"true","type":"int","desc":"支付宝二维码"}
-     * @input {"name":"real_name","require":"true","type":"int","desc":"真实名字"}
-     * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
-     * @output {"name":"msg","type":"string","desc":"信息说明"}
-     */
-
-
-    public function certification()
-    {
-        /*$requires = array("id"=>"缺少会员id","id_photo_positive"=>"缺少身份证正面照","id_photo_reverse"=>"缺少身份证反面照",
-                    "id_photo_unity"=>"缺少人像图片","china_id"=>"缺少身份证号","alipay_id"=>"缺少支付宝号","alipay_qrcode"=>"缺少支付宝收款码",
-                    "id_photo_unity"=>"缺少名称",);
-        $params = array();
-        foreach($requires as $k => $v)
-        {
-            if(empt($this->input->post($k))){
-                show300($v);
-            }
-            $params[$k] = trim($this -> input -> post($k));
-        }*/
-        $id = trim($this->input->post('id'));//用户id
-        $id_photo_positive = trim($this->input->post('id_photo_positive'));//身份证正面图片
-        $id_photo_reverse = trim($this->input->post('id_photo_reverse'));//身份证反面图片
-        $id_photo_unity = trim($this->input->post('id_photo_unity'));//身份证人像图片
-        $china_id = trim($this->input->post('china_id'));//身份证号
-        $alipay_id = trim($this->input->post('alipay_id'));//支付宝号
-        $alipay_qrcode = trim($this->input->post('alipay_qrcode'));//支付宝二维码
-        $real_name = trim($this->input->post('real_name'));//真实名字
-
-        //模拟数据
-        $params['id'] = 2;
-        $params['alipay_id'] = '17681888141';
-        $params['id_photo_positive'] = 'dsfagasdagvsd';
-        $params['id_photo_reverse'] = 'dsfagasdagvsd';
-        $params['id_photo_unity'] = 'dsfagasdagvsd';
-        $params['alipay_qrcode'] = 'dsfagasdagvsd';
-        $params['china_id'] = '142201199205154021';
-        $params['real_name'] = '郭丽琴';
-        $id = $params['id'];
-        /*$id = 2;
-        $alipay_id = '17681888141';
-        $id_photo_positive = 'dsfagasdagvsd';
-        $id_photo_reverse = 'dsfagasdagvsd';
-        $id_photo_unity = 'dsfagasdagvsd';
-        $alipay_qrcode = 'dsfagasdagvsd';
-        $china_id='142201199205154021';
-        $real_name='郭丽琴';
-
-        if(empty($id)){
-            show300('会员id不能为空');
-        }
-        if(empty($id_photo_positive)){
-            show300('身份证正面照不能为空');
-        }
-        if(empty($id_photo_reverse)){
-            show300('身份证反面照不能为空');
-        }
-        if(empty($id_photo_unity)){
-            show300('证件照人像不能空');
-        }
-        if(empty($china_id)){
-            show300('身份证号不能为空');
-        }
-        if(empty($alipay_qrcode)){
-            show300('支付宝二维码不能为空');
-        }
-        if(empty($alipay_id)){
-            show300('支付宝号不能为空');
-        }
-        if(empty($real_name)){
-            show300('名字不能为空');
-        }*/
-        //此处根据支付宝号判断有效性；
-
-        /*$mem['id_photo_positive']=$id_photo_positive;
-        $mem['id_photo_reverse']=$id_photo_reverse;
-        $mem['id_photo_unity']=$id_photo_unity;
-        $mem['alipay_id']=$alipay_id;
-        $mem['alipay_qrcode']=$alipay_qrcode;
-        $mem['china_id']=$china_id;//通过证件照访问接口获取身份证号和名称；
-        $mem['real_name']=$real_name;//通过证件照访问接口获取身份证号和名称；*/
-
-
-        unset($params['id']);
-
-        //echo "<pre>";
-        //print_r($params);exit;
-
-
-        $referee_id = $this->member_model->updateWhere(['id' => $id], $params);
-
-        //如果支付宝号验证成功，并且已经认证，调用升级接口
-        if($referee_id){
-            $this->updateLevel($id);
-        }
-
-        print_r($referee_id);
-        exit;
-
-
-    }
-
-
-    public function payMoney()
-    {
-
-
-    }
-
-
-    public function test()
-    {
-
-
-        $this->member_model->start();
-        $mem['real_name'] = '郭丽琴';
-        $res1 = $this->member_model->updateWhere(['id' => 1], $mem);
-        //print_r($res1);exit;
-        $machine['title'] = '测试';
-        $res2 = $this->machine_model->updateWhere(['id' => 1], $machine);
-        //print_r($res2);exit;
-        if ($res1 && $res2) {
-            $this->member_model->commit();
-        } else {
-            $this->member_model->rollback();
-        }
-    }
-
     //升级会员等级判断
     public function updateLevel($id)
     {
+		//print_r($id);exit;
         if (!$id) {
             show300('会员id不能为空');
         }
@@ -543,6 +402,8 @@ class Member extends CI_Controller
             'data' => $ids
         ];
         $data = $this->member_model->getWhere($where, $select = '*', $dbArray = [], $where_in);
+		//echo "<pre>";
+		//print_r($data);exit;
         if (!empty($data)) {
 
             foreach ($data as $val) {
