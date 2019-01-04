@@ -66,7 +66,7 @@ class Bill_model extends MY_Model
         {
             return "当前用户已经不存在";
         }
-        $avaliable_origin_res = $mem_bill_outline -> origin_amount - $this -> getOriginResOfForen($member_id) ;
+        $avaliable_origin_res = $mem_bill_outline -> origin_amount ;
         if($avaliable_origin_res < $bill_real_pay)
         {
             return "用户可用原始资源不足，需要".$bill_real_pay.",拥有:".$avaliable_origin_res;
@@ -165,6 +165,7 @@ class Bill_model extends MY_Model
     }
 
 
+    /**  TODO:暂时未使用
     //原始资产卖出
     public function saleOriginRes($params){
         $member_id = $params['sale_member_id'];
@@ -182,7 +183,7 @@ class Bill_model extends MY_Model
         if($this -> db -> insert($this -> tbl_origin_res_sale_bill,$data)){
             return $this->db->insert_id();
         }
-    }
+    }**/
 
     //卖给确定的买单
     public function sale2BuyBillOriginRes($params){
@@ -216,12 +217,13 @@ class Bill_model extends MY_Model
         if($member_res -> saleable_top < $pay_amount){
             return "您的可交易额度".$member_res -> saleable_top."小于要购买的额度:".$amount;
         }
-        //判断可交易资产是否足够
-        if($member_res -> tradeable_amount < $pay_amount){
-            return "您的可交易资产数目".$member_res -> tradeable_amount."小于要购买的额度:".$amount;
-        }
         //扣除卖家手续费
         $tax = $this -> origin_bill_res_tax($sale_member_id, $amount);
+        //判断可交易资产是否足够 可交易资产-冻结的可交易资产-缴纳的手续费
+        $avaliable_tradeable_amount = $member_res -> tradeable_amount - $member_res -> tradeable_foren_amount ;
+        if($avaliable_tradeable_amount < ($pay_amount + $tax)){
+            return "需要:(卖出数目+手续费):" . $tax .   "+" . $amount . ";可用:(拥有-冻结)" . $member_res -> tradeable_amount . "-" . $member_res -> tradeable_foren_amount . "!额度不足!";
+        }
 
         $sale_data = array(
             'sale_member_id' => $sale_member_id,
@@ -256,6 +258,8 @@ class Bill_model extends MY_Model
         //业务订单入库
         $this -> db -> insert($this -> tbl_origin_res_bill,$data);
         $origin_res_bill_id = $this->db->insert_id();
+        //增加卖家冻结额度
+        $this -> addTradeableResOfForen($sale_member_id, ($amount + $tax));
 
         $this->db->trans_complete();//提交事务
 
@@ -313,10 +317,9 @@ class Bill_model extends MY_Model
             return "您无权处理该订单";
         }
 
-        //判断当前订单是否是已付款待确认状态,必须第3步是0 TODO:且当前只有3步
+        //判断当前订单是否是已付款待确认状态:0-0-0
         $current_stat = $origin_bill -> stat;
-        $current_phase_stat = get_stat_code($current_stat, 3);
-        if($current_phase_stat !== '0'){
+        if($current_stat != '0-0-0'){
             return "当前订单不是已付款待确认状态";
         }
         $new_stat = $current_stat.'-0';
@@ -332,16 +335,18 @@ class Bill_model extends MY_Model
         $this -> db -> set ('stat', $new_stat);
         $this -> db -> where ('id', $origin_bill -> sale_bill_id);
         $this -> db -> update($this -> tbl_origin_res_sale_bill);
-        //TODO:更新买家资产,增加原始资产/可售额度=1.7*amount
+        // TODO:可售额度倍数需要根据等级获得，更新买家资产,增加原始资产/可售额度=1.7*amount
         $buy_member_id = $origin_bill -> buy_member_id;
         $sql_update_buy = "update ".$this -> tbl_member_resouce." set origin_amount=origin_amount+".$origin_bill -> amount.",saleable_top=saleable_top+".SALEABLE_TOP_MUL_NUM * $origin_bill -> amount." where member_id=".$buy_member_id.";";
 echo $sql_update_buy;
         $this -> db -> query($sql_update_buy);
-        //TODO:更新卖家资产,减少原始资产/原始资产扣税/
+        //更新卖家资产,减少可交易资产(卖出数量+手续费)
         $sale_member_id = $origin_bill -> sale_member_id;
         $sql_update_sale = "update ".$this -> tbl_member_resouce." set tradeable_amount=tradeable_amount-".($origin_bill -> amount + $origin_bill -> tax)." where member_id=".$sale_member_id.";";
         $this -> db -> query($sql_update_sale);
 echo $sql_update_sale;
+        //减除卖家冻结额度
+$this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $origin_bill -> tax));
 
         $this->db->trans_complete();
 
@@ -424,22 +429,46 @@ echo $sql_update_sale;
     /** 处理原始资产交易 End**/
 
 
+    /** 处理可售资产 **/
+
+    //原始资产转为可售资产
+    public function origin_2_totrade_res($loginer_id, $amount)
+    {
+        $res = $this -> getBillOutline($loginer_id);
+        //判断原始资产是否足够
+        if($res == null){
+            return "缺少用户资产记录";
+        }
+        if($res -> origin_amount < $amount){
+            return "需要:" . $amount . ";拥有:" . $res -> origin_amount . "!原始资产不足，请赶紧购买!";
+        }
+        $toTradeAmount = TO_TRADE_MUL_NUM * $amount;
+        //更新资产
+        $sql_update_sale = "update ".$this -> tbl_member_resouce." set origin_amount = origin_amount - ".$amount.",totrade_amount = totrade_amount + ".$toTradeAmount." where member_id=".$loginer_id.";";
+        $this -> db -> query($sql_update_sale);
+        return $this -> db -> affected_rows();
+    }
+
+
+    /** 处理可售资产 End**/
+
 
     /*** 处理获取个人资产汇总相关数据 **/
 
-    //获取各项资产汇总 TODO:内容发生变化
+    //获取各项资产汇总 
     public function getBillOutline($id){
         return $this->db->get_where($this->tbl_member_resouce,array('id' => $id))->row();
     }
 
-    //获取个人冻结得原始资产数量 TODO:待开发
-    public function getOriginResOfForen($id){
-        return 0;
+    //增加冻结资产
+    public function addTradeableResOfForen($member_id, $amount){
+        $sql_update = "update ".$this -> tbl_member_resouce." set tradeable_foren_amount=tradeable_foren_amount+".$amount." where member_id=".$member_id.";";
+        $this -> db -> query($sql_update);
     }
-
-    //获取个人可用的原始资产数量 TODO:待开发
-    public function getOriginResOfAvaliable($id){
-            return 0;
+    //减去冻结资产
+    public function delTradeableResOfForen($member_id, $amount){
+        $sql_update = "update ".$this -> tbl_member_resouce." set tradeable_foren_amount=tradeable_foren_amount-".$amount." where member_id=".$member_id.";";
+        $this -> db -> query($sql_update);
     }
 
     /*** 处理获取个人资产汇总相关数据End **/

@@ -83,6 +83,45 @@ class Bill extends CI_Controller
     /** 处理交易原始资产相关数据 **/
 
     /**
+     * @title 原始资产转为可售资产
+     * @desc  原始资产转为可售资产
+     * @input {"name":"amount","require":"true","type":"int","desc":"转的数量"}	
+     * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
+     * @output {"name":"msg","type":"string","desc":"信息说明"}
+     * @output {"name":"data","type":"int","desc":"是否成功"}
+    **/
+    public function origin_2_totrade_res()
+    {
+        $amount = $this->input->post("amount");
+        if($amount == null){
+            show300("缺少转化数量");
+        }
+        if(!is_numeric($amount)){
+            show300("数量必须是数字");
+        }
+        $len = strlen($amount);
+        //取整十数字
+        $n = 10 ** ($len-1);
+        $amount = (int)($amount / $n) * $n;
+        if($amount <= 0 ){
+            show300("数量必须大于0");
+        }
+        //TODO:登录用户
+        $loginer_id = 1;
+        $data = $this -> bill_model -> origin_2_totrade_res($loginer_id, $amount);
+        if(is_string($data)){
+            show300($data);
+        }else{
+            if($data == 1){
+                show200(true);
+            }else{
+                show300("错误影响行数，请联系管理员");
+            }
+        }
+    }
+
+
+    /**
      * @title 购买原始资产下单
      * @desc  会员买入挂单
      * @input {"name":"second_pwd","require":"true","type":"string","desc":"买家会员二级密码"}	
@@ -103,8 +142,17 @@ class Bill extends CI_Controller
             }
             $params[$k] = $this -> input -> post($k);
         }
-        //TODO:获取登录用户的id,验证二级密码
+        //TODO:获取登录用户的id
         $loginer_id = 1;
+        $buy_member = $this->member_model->getwhereRow(['id' => $loginer_id],'*');
+        //必须认证用户可以买入
+        if($buy_member["is_valid"] != "1"){
+            show300("只有认证用户可以下单，请尽快认证");
+        }
+        //验证二级密码
+        if($buy_member["pwd_second"] != $params["second_pwd"]){
+            show300("二级密码错误");
+        }
         $params["buy_member_id"] = $loginer_id;
         $data = $this -> bill_model -> buyOriginRes($params);
         if($data > 0){

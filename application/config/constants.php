@@ -97,6 +97,7 @@ define('SITENAME','比特币项目');       //站点名称
 define('PAGESIZE',10);       //全站基本每页条目数量
 define('HOMEMACHINE',5);       //站点名称
 define('ORIGIN_BILL_SALE_MAX',150);       //可卖出的静态额度
+define('TO_TRADE_MUL_NUM',5);       //原始资源转为可售资源的放大比例
 define('SALEABLE_TOP_MUL_NUM',1.7);       //买入原始资产时，获赠的可售额度倍数
 define('SMS_ID',"SMS_141945019");       //短信平台id
 define('SMS_SIGN', "众合致胜");       //短信平台签名
