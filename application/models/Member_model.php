@@ -41,8 +41,22 @@ class Member_model extends MY_Model
         $this->db->where('referee_id', $id);
         return $this->db->count_all_results();
     }
-
-    //获取会员等级
+ /*
+  * 获取会员信息链表查等级
+  * @param $id  会员id
+  */
+	public function getMyInfo($id){
+		$this->db->from($this->table);
+		$this->db->select('member.id,member.real_name,member.head_icon,lev.name');
+		$this->db->join('member_level as lev','lev.id=member.member_lvl','left');
+		$this->db->where('member.id',$id);
+		return $this->db->get()->row_array();	
+	}
+	
+ /*
+  * 获取会员等级
+  * @param $member_lvl  等级id
+  */
     public function getLevel($member_lvl)
     {
         $query = $this->db->get_where('member_level', ['id' => $member_lvl], 1)->row_array();
