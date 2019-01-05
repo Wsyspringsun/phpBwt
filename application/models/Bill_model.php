@@ -471,6 +471,28 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
         $this -> db -> query($sql_update);
     }
 
+    //释放可售资产为可交易资产
+    public function toTradeRes2TradeableRes(){
+        $this->db->trans_start();
+        //插入明细记录
+        $query_i = "insert into totrade_2_trade_bill ( `realease_amount`, `totrade_amount_old`, `totrade_amount`, `trade_amount_old`, `trade_amount`, `member_id`) select   `totrade_amount` * 0.002, `totrade_amount`, `totrade_amount` * 0.998   , `tradeable_amount`, `tradeable_amount` + `totrade_amount` * 0.002,  `member_id` from  member_resouce t where t.`totrade_amount` > 0; ";
+        $this -> db -> query($query_i);
+        //更新资产记录
+        $query_u = "update member_resouce set  `totrade_amount`= `totrade_amount` * 0.998 ,`tradeable_amount` = `tradeable_amount` + `totrade_amount` * 0.002 where `totrade_amount` > 0;";
+        $this -> db -> query($query_u);
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === FALSE)
+        {
+            return "事务执行失败";
+        }else{
+            return $this -> db -> query("select `realease_amount`, `totrade_amount_old`, `totrade_amount`, `trade_amount_old`, `trade_amount`, `member_id` from totrade_2_trade_bill;") -> result();
+        }
+    }
+
+
+
     /*** 处理获取个人资产汇总相关数据End **/
 
 }
