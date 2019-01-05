@@ -35,29 +35,39 @@ class Member extends CI_Controller
         $pwd_second_again = trim($this->input->post('pwd_second_again'));
         $referee_mobile = trim($this->input->post('referee_mobile'));
 
-        /* $mobile = '17681876666';
+         $mobile = '17681876666';
          $yzm = 666;
          $this->session->set_tempdata('yzm', $yzm, 60);
          $pwd = 123456;
          $pwd_again = 123456;
          $pwd_second = 123456;
          $pwd_second_again = 123456;
-         $referee_mobile = '18335018141';*/
+         $referee_mobile = '18335018141';
+		 $paw_str=strlen($pwd);
+		 $pwd_second_str=strlen($pwd_second);
+		 
         if (!$yzm) {
             show300('验证码不能为空');
         }
         if (!$pwd) {
             show300('登录密码不能为空');
         }
+		if($paw_str<6){
+			show300('密码长度不能少于6位');
+		}
         if (!$pwd_again) {
             show300('确认登录密码不能为空');
         }
         if (!$pwd_second) {
             show300('二次密码不能为空');
         }
+		if($pwd_second_str<6){
+			show300('二次密码长度不能少于6位');
+		}
         if (!$pwd_second_again) {
             show300('确认二次密码不能为空');
         }
+		
         if ($pwd != $pwd_again) {
             show300('两次登录密码不一致');
         }
@@ -297,7 +307,8 @@ class Member extends CI_Controller
 
     public function getLoginYzm()
     {
-        $str = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        //$str = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        $str = '0123456789';
         $loginYzm = "";
         for ($i = 0; $i < YAMLENGTH; $i++) {
             $loginYzm .= $str[mt_rand(0, strlen($str) - 1)];
@@ -319,10 +330,10 @@ class Member extends CI_Controller
     public function login()
     {
         $mobile = trim($this->input->post('mobile'));
-        $loginYzm = trim($this->input->post('loginYzm'));
+        $loginYzm = strtolower(trim($this->input->post('loginYzm')));
         $pwd = trim($this->input->post('pwd'));
         /*$mobile = '17681876666';
-        $loginYzm = 'wThR';
+		$loginYzm=strtolower($loginYzm);
         $pwd = '123456';*/
         $this->session->set_tempdata('loginYzm', $loginYzm, 300);
         if (!$mobile) {
@@ -335,7 +346,7 @@ class Member extends CI_Controller
             show300('登录密码不能为空');
         }
         //print_r($this->session->tempdata('loginYzm'));exit;
-        if ($this->session->tempdata('loginYzm') != $loginYzm) {
+        if (strtolower($this->session->tempdata('loginYzm')) != $loginYzm) {
             show300('验证码错误');
         }
         $user_pad = $this->member_model->getwhereRow(['mobile' => $mobile], 'pwd,id');
@@ -351,6 +362,18 @@ class Member extends CI_Controller
         //print_r($this->session->tempdata('id'));exit;
         show200('登陆成功');
     }
+	
+	 /**
+     * @title 用户退出
+     * @desc  (用户退出)
+     * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
+     * @output {"name":"msg","type":"string","desc":"信息说明"}
+     */
+	
+	public function loginOut(){
+		$this->session->unset_userdata('id');
+		show200('退出成功');
+	}
 
     /**
      * @title 个人资料
@@ -385,6 +408,7 @@ class Member extends CI_Controller
         $data = $this->member_model->getwhereRow(['id' => $id], '*');
         if (!empty($data)) {
             $data['referee_mobile'] = $this->member_model->getwhereRow(['id' => $data['referee_id']], 'mobile')['mobile'];
+			$data['member_lvl']=$this->member_model->getLevel($data['member_lvl']);
         }
         show200($data);
     }
@@ -513,5 +537,32 @@ class Member extends CI_Controller
         }
 
         return true;
-    }			
+    }
+	
+	public function upload(){
+			if($_FILES["file"]["error"]){
+				echo $_FILES["file"]["error"];    
+			}else{
+					if(($_FILES["file"]["type"]=="image/png"||$_FILES["file"]["type"]=="image/jpeg")&&$_FILES["file"]["size"]<1024000){
+							 //$filename ="./img/".time().$_FILES["file"]["name"];
+							 //$filename =iconv("UTF-8","gb2312",$filename);
+							 $filename =date('YmdHis').rand(1000,9999).'.jpg';
+							if(file_exists($filename)){
+								show300('该文件已存在');
+							}else{  
+									$config['upload_path']='./upload/';
+									$config['allowed_types']='gif|jpg|png';
+									$config['file_name']=$filename;
+									$this->load->library('upload', $config);
+									$this->upload->do_upload('file');
+									$data['picPath']=PHOTOPATH.$filename;
+									//return $data['picPath'];
+									show200($data);
+							}        
+					}else{
+						show300('文件类型不对');
+					}
+				}
+	}
+	 
 }
