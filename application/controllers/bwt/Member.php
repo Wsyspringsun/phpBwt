@@ -494,9 +494,9 @@ class Member extends CI_Controller
 			}    
     }
     //升级会员等级判断
-    public function updateLevel($id)
+    public function updateLevel($id=19)
     {
-        //print_r($id);exit;
+       // print_r($id);exit;
         if (!$id) {
             show300('会员id不能为空');
         }
@@ -508,24 +508,111 @@ class Member extends CI_Controller
             'data' => $ids
         ];
         $data = $this->member_model->getWhere($where, $select = '*', $dbArray = [], $where_in);
+
         if (!empty($data)) {
             foreach ($data as $val) {
-                switch ($val['member_lvl']) {
-                    case "1":
-                        $num = 9;
-                        break;
-                    default:
-                        $num = 3;
-                }
-                $cWhere = [
+
+                $pwhere=[
+                    'referee_id'=>$val['id'],
                     'is_valid' => 1,
-                    'referee_id' => $val['id'],
-                    'member_lvl' => $val['member_lvl']
 
                 ];
-				//print_r($cWhere);exit;
+                $temp=$this->member_model->getWhere($pwhere,$select='id',$dbArray=[],$where_in=[]);
+                $result=[];//获取直推id
+                if($temp){
+                    foreach ($temp as $val1){
 
-                $count = $this->member_model->getWhere_num($cWhere);
+                        array_push($result,$val1['id']);
+                    }
+                }
+
+
+                switch ($val['member_lvl']) {
+                    case "2":
+                        $num = 3;
+                        $cWhere = [
+                            'is_valid' => 1,
+                            'member_lvl' =>1
+
+                        ];
+                        break;
+                    case "3":
+                        $cWhere = [
+                            'is_valid' => 1,
+                            'member_lvl' =>2
+
+                        ];
+                        $num = 3;
+                        break;
+                    case "4":
+                        $cWhere = [
+                            'is_valid' => 1,
+                            'member_lvl' =>3
+
+                        ];
+
+                        $num = 3;
+                        break;
+                    case "5":
+                        $cWhere = [
+                            'is_valid' => 1,
+                            'member_lvl' =>4
+
+                        ];
+                        $num = 3;
+                        break;
+                    case "6":
+                        $cWhere = [
+                            'is_valid' => 1,
+                            'referee_id' => $val['id'],
+                            'member_lvl' =>5
+
+                        ];
+                        $num = 3;
+                        break;
+                    case "7":
+                        $cWhere = [
+                            'is_valid' => 1,
+                            'member_lvl' =>6
+
+                        ];
+                        $num = 3;
+                        break;
+                    case "8":
+                        $cWhere = [
+                            'is_valid' => 1,
+                            'member_lvl' =>7
+
+                        ];
+                        $num = 3;
+
+                        break;
+
+                    default:
+                        $cWhere = [
+                            'is_valid' => 1,
+                            'referee_id' => $val['id'],
+                            'member_lvl' => 1
+
+                        ];
+                        $num = 9;
+                }
+
+                $cWhere_in = [
+                    'field' => 'referee_id',
+                    'data' => $result
+                ];
+
+
+				if($val['member_lvl']==1){
+                    $count = $this->member_model->getWhere_num($cWhere);//0级升一级，9个直推
+                }else{
+				    //除一级以外的升级
+                    $count =$this->member_model->getRefereeNum($cWhere,$dbArray=[],$cWhere_in,$groupBy='referee_id');
+                    
+                }
+
+
                 //升级
                 if ($count >= $num) {
                     $update['member_lvl'] = $val['member_lvl'] + 1;
