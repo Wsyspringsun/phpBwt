@@ -20,7 +20,6 @@ class Bill extends CI_Controller
     /**
     * @title 购买矿机
     * @desc  执行矿机购买流程
-    * @input {"name":"member_id","require":"true","type":"int","desc":"会员id"}	
     * @input {"name":"machine_id","require":"true","type":"int","desc":"矿机id"}	
     * @input {"name":"bill_hour_amount","require":"true","type":"int","desc":"租用时长"}	
     * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
@@ -29,7 +28,7 @@ class Bill extends CI_Controller
     public function buy_machine()
     {
         //$id = $this->input->post('id');
-        $requires = array("member_id"=>"缺少会员id","machine_id"=>"缺少矿机id","bill_hour_amount"=>"缺少租用时长");
+        $requires = array("machine_id"=>"缺少矿机id","bill_hour_amount"=>"缺少租用时长");
         $params = array();
         foreach($requires as $k => $v)
         {
@@ -38,6 +37,9 @@ class Bill extends CI_Controller
             }
             $params[$k] = $this -> input -> post($k);
         }
+        //TODO:改session
+        $loginer_id = 1;
+        params["member_id"] = $loginer_id;
         $data = $this -> bill_model -> buyMachine($params);
         if($data > 0){
             show200($data);

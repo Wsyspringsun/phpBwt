@@ -11,18 +11,12 @@ class Task extends CI_Controller
 	$this->load->model(array('bill_model','member_model'));		
     }
 
-    public function test()
-    {
-        show200("OK");
-    }
-
+    /**
     private function write_file(){
         $count++;
-        // 设定定时任务终止条件
         if(file_exists('lock.txt'))
         {
-            //break;
-        }
+        }   
 
         // 写文件操作开始
         $fp= fopen("test".$count.".txt","w");
@@ -42,22 +36,41 @@ class Task extends CI_Controller
         // 写文件操作结束
 
     }
+    **/
 
 
-    //开启每日执行一次的任务
-    public function day_task()
+    //开启每小时执行一次的任务
+    public function hour_task()
     {
-        $data = $this -> bill_model -> toTradeRes2TradeableRes();
-        show200($data);
-        //ignore_user_abort(TRUE);// 设定关闭浏览器也执行程序
-        //set_time_limit(0);     // 设定响应时间不限制，默认为30秒
-         
-        //$count= 0;
-        //echo "Strart.....";
-        //while(TRUE)
-        //{
-            //sleep(20);          // 每5秒钟执行一次
-        //}
+        // 设定定时任务启动条件
+        $dict = $this -> bill_model -> getKeyValFromParams("3","flg");
+        if($dict["params_val"] == 'off'){
+            show300("定时任务指令处于关闭状态");
+        }
+        
+        ignore_user_abort(TRUE);// 设定关闭浏览器也执行程序
+        set_time_limit(0);     // 设定响应时间不限制，默认为30秒
+        while(TRUE)
+        {
+            // 设定定时任务终止条件
+            $dict = $this -> bill_model -> getKeyValFromParams("3","flg");
+            if($dict["params_val"] == 'off'){
+                break;
+            }
+            //矿机产出
+            $this -> bill_model -> machineProduct();
+            //每天凌晨1点进行每日计算
+            $now = time();
+            $hour = date('H', $now);
+            if($hour == '01'){
+                //释放可售资产为可交易资产
+                $this -> bill_model -> toTradeRes2TradeableRes();
+            }
+            
+            sleep(3600);          // 每小时钟执行一次
+            
+        }
+        echo "定时任务执行停止..".date("Y-m-d H:i:s",time());
     }
 
 }

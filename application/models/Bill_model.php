@@ -37,6 +37,9 @@ class Bill_model extends MY_Model
         $m =  $this->db->get_where('machine',array('id' => $machine_id))->row();
         if($m == null)
             return "当前矿机已经不存在,请刷新数据";
+        $member_id = $params["member_id"];
+        //TODO:判断会员是否有权租用此矿机
+        //$buy_member = $this->member_model->getwhereRow(['id' => $member_id],'*');
         $bill_hour_amount = $params["bill_hour_amount"];
         $dtfmt = DATE_TIME_FMT;
         //矿机租用起始时间
@@ -47,7 +50,6 @@ class Bill_model extends MY_Model
         $bill_price = $m -> price;
         //花费金额
         $bill_real_pay = $bill_price * $bill_hour_amount;
-        $member_id = $params["member_id"];
         $bill_data =  array(
             "bill_no" => get_bill_unique_id($member_id),
             "member_id" => $member_id,
@@ -475,10 +477,10 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
     public function toTradeRes2TradeableRes(){
         $this->db->trans_start();
         //插入明细记录
-        $query_i = "insert into totrade_2_trade_bill ( `realease_amount`, `totrade_amount_old`, `totrade_amount`, `trade_amount_old`, `trade_amount`, `member_id`) select   `totrade_amount` * 0.002, `totrade_amount`, `totrade_amount` * 0.998   , `tradeable_amount`, `tradeable_amount` + `totrade_amount` * 0.002,  `member_id` from  member_resouce t where t.`totrade_amount` > 0; ";
+        $query_i = "insert into totrade_2_trade_bill ( `realease_amount`, `totrade_amount_old`, `totrade_amount`, `trade_amount_old`, `trade_amount`, `member_id`) select   truncate(`totrade_amount` * 0.002,0), `totrade_amount`, `totrade_amount` -  truncate(`totrade_amount` * 0.002,0)  , `tradeable_amount`, `tradeable_amount` + truncate(`totrade_amount` * 0.002,0),  `member_id` from  member_resouce t where t.`totrade_amount` >= 500; ";
         $this -> db -> query($query_i);
         //更新资产记录
-        $query_u = "update member_resouce set  `totrade_amount`= `totrade_amount` * 0.998 ,`tradeable_amount` = `tradeable_amount` + `totrade_amount` * 0.002 where `totrade_amount` > 0;";
+        $query_u = "update member_resouce set `tradeable_amount` = `tradeable_amount` + truncate(`totrade_amount` * 0.002,0) , `totrade_amount`= `totrade_amount` - truncate(`totrade_amount` * 0.002,0) where `totrade_amount` >= 500;";
         $this -> db -> query($query_u);
 
         $this->db->trans_complete();
@@ -487,13 +489,27 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
         {
             return "事务执行失败";
         }else{
-            return $this -> db -> query("select `realease_amount`, `totrade_amount_old`, `totrade_amount`, `trade_amount_old`, `trade_amount`, `member_id` from totrade_2_trade_bill;") -> result();
+            //return $this -> db -> query("select `realease_amount`, `totrade_amount_old`, `totrade_amount`, `trade_amount_old`, `trade_amount`, `member_id` from totrade_2_trade_bill;") -> result();
+            return true;
         }
+    }
+
+    //更新矿机订单执行次数
+    public function machineProduct(){
+        $query_u = "update member_machine_bill set prod_cnt = prod_cnt + 1 where prod_cnt < bill_hour_amount; ";
+        $this -> db ->query($query_u);
     }
 
 
 
+
     /*** 处理获取个人资产汇总相关数据End **/
+
+    //从键值对参数表中获取指定数据
+    public function getKeyValFromParams($type,$key){
+        $dict = $this -> db -> get_where($this -> tbl_key_val_params, ["params_type" => $type, "params_key" => $key]) -> row_array();
+        return $dict;
+    }
 
 }
 ?>
