@@ -11,22 +11,8 @@ class Index extends CI_Controller
     }
     public function index()
     {
-        $templateId = 'SMS_141945019';   //短信模板ID
-        $smsSign = "众合致胜";           // 签名
-        $sms = new SmsDemo();
-        $res = $sms->sendSms('13203561153',$templateId ,$smsSign ,['code'=>'一个测试']);
-        if($res->Code=='OK'){            
-            echo '发送成功';
-        }else{
-            echo '发送失败';
-        }
-        /**
-        **/
+		echo  "欢迎使用".SITENAME;
+      
     }
 
-    public function test(){
-            
-            echo "wsy测试成功";
-    
-    }
 }

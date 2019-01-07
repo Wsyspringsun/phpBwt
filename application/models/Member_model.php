@@ -41,8 +41,49 @@ class Member_model extends MY_Model
         $this->db->where('referee_id', $id);
         return $this->db->count_all_results();
     }
-
-    //获取会员等级
+ /*
+  * 获取会员信息链表查等级
+  * @param $id  会员id
+  */
+	public function getMyInfo($id){
+		$this->db->from($this->table);
+		$this->db->select('member.id,member.real_name,member.head_icon,lev.name');
+		$this->db->join('member_level as lev','lev.id=member.member_lvl','left');
+		$this->db->where('member.id',$id);
+		return $this->db->get()->row_array();	
+	}
+	/*
+  * 获取会员信息链表查等级
+  * @param $id  会员id
+  */
+	public function getTeam($limit=10,$page=0,$id){
+		$this->db->from($this->table);
+		$this->db->select('member.id,member.real_name,member.mobile,lev.name as member_lvl');
+		$this->db->join('member_level as lev','lev.id=member.member_lvl','left');
+		$this->db->limit($limit,$page);
+		$this->db->where('member.referee_id',$id);
+		return $this->db->get()->result_array();	
+	}
+		/*
+  * 获取会员信息链表查等级
+  * @param $id  会员id
+  */
+	public function getTeamCount($id){
+		$this->db->from($this->table);
+		$this->db->where('member.referee_id',$id);
+		 return $this->db->count_all_results();
+	}
+	
+	public function getValidNum($ids,$where){
+		$this->db->from($this->table);
+		$this->db->where_in('id',$ids);
+		$this->db->where('is_valid',$where);
+		return $this->db->count_all_results();
+	}
+ /*
+  * 获取会员等级
+  * @param $member_lvl  等级id
+  */
     public function getLevel($member_lvl)
     {
         $query = $this->db->get_where('member_level', ['id' => $member_lvl], 1)->row_array();
@@ -99,7 +140,7 @@ class Member_model extends MY_Model
         return $ids;
 
     }
-
+ 
     //获取数据条数
     public function getRefereeNum($where,$dbArray=[],$where_in=[],$groupBy='referee_id'){
         $this->db->where($where);

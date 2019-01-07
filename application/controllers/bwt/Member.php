@@ -1,6 +1,5 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
-
 class Member extends CI_Controller
 {
     private static $data = array();
@@ -36,29 +35,39 @@ class Member extends CI_Controller
         $pwd_second_again = trim($this->input->post('pwd_second_again'));
         $referee_mobile = trim($this->input->post('referee_mobile'));
 
-        /* $mobile = '17681876666';
+         $mobile = '17681876666';
          $yzm = 666;
          $this->session->set_tempdata('yzm', $yzm, 60);
          $pwd = 123456;
          $pwd_again = 123456;
          $pwd_second = 123456;
          $pwd_second_again = 123456;
-         $referee_mobile = '18335018141';*/
+         $referee_mobile = '18335018141';
+		 $paw_str=strlen($pwd);
+		 $pwd_second_str=strlen($pwd_second);
+		 
         if (!$yzm) {
             show300('验证码不能为空');
         }
         if (!$pwd) {
             show300('登录密码不能为空');
         }
+		if($paw_str<6){
+			show300('密码长度不能少于6位');
+		}
         if (!$pwd_again) {
             show300('确认登录密码不能为空');
         }
         if (!$pwd_second) {
             show300('二次密码不能为空');
         }
+		if($pwd_second_str<6){
+			show300('二次密码长度不能少于6位');
+		}
         if (!$pwd_second_again) {
             show300('确认二次密码不能为空');
         }
+		
         if ($pwd != $pwd_again) {
             show300('两次登录密码不一致');
         }
@@ -129,10 +138,13 @@ class Member extends CI_Controller
     public function getMyInfo()
     {
         $id = $this->session->tempdata('id');
+        $id = 1;
         if (empty($id)) {
             show300('会员id不能为空');
         }
-        $data = $this->member_model->getwhereRow(['id' => $id], 'id,real_name,head_icon,member_lvl');
+		//$data=$this->member_model->getMyInfo($id);
+		$data = $this->member_model->getwhererow(['id' => $id], 'id,real_name,head_icon,member_lvl');
+		$data['member_lvl']=$this->member_model->getLevel($data['member_lvl']);
         show200($data);
     }
 
@@ -295,7 +307,8 @@ class Member extends CI_Controller
 
     public function getLoginYzm()
     {
-        $str = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        //$str = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        $str = '0123456789';
         $loginYzm = "";
         for ($i = 0; $i < YAMLENGTH; $i++) {
             $loginYzm .= $str[mt_rand(0, strlen($str) - 1)];
@@ -317,10 +330,10 @@ class Member extends CI_Controller
     public function login()
     {
         $mobile = trim($this->input->post('mobile'));
-        $loginYzm = trim($this->input->post('loginYzm'));
+        $loginYzm = strtolower(trim($this->input->post('loginYzm')));
         $pwd = trim($this->input->post('pwd'));
         /*$mobile = '17681876666';
-        $loginYzm = 'wThR';
+		$loginYzm=strtolower($loginYzm);
         $pwd = '123456';*/
         $this->session->set_tempdata('loginYzm', $loginYzm, 300);
         if (!$mobile) {
@@ -333,7 +346,7 @@ class Member extends CI_Controller
             show300('登录密码不能为空');
         }
         //print_r($this->session->tempdata('loginYzm'));exit;
-        if ($this->session->tempdata('loginYzm') != $loginYzm) {
+        if (strtolower($this->session->tempdata('loginYzm')) != $loginYzm) {
             show300('验证码错误');
         }
         $user_pad = $this->member_model->getwhereRow(['mobile' => $mobile], 'pwd,id');
@@ -349,6 +362,18 @@ class Member extends CI_Controller
         //print_r($this->session->tempdata('id'));exit;
         show200('登陆成功');
     }
+	
+	 /**
+     * @title 用户退出
+     * @desc  (用户退出)
+     * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
+     * @output {"name":"msg","type":"string","desc":"信息说明"}
+     */
+	
+	public function loginOut(){
+		$this->session->unset_userdata('id');
+		show200('退出成功');
+	}
 
     /**
      * @title 个人资料
@@ -376,21 +401,102 @@ class Member extends CI_Controller
     public function getMemberInfo()
     {
         $id = $this->session->tempdata('id');
+		//$id=1;
         if (empty($id)) {
             show300('会员id不能为空');
         }
         $data = $this->member_model->getwhereRow(['id' => $id], '*');
         if (!empty($data)) {
             $data['referee_mobile'] = $this->member_model->getwhereRow(['id' => $data['referee_id']], 'mobile')['mobile'];
+			$data['member_lvl']=$this->member_model->getLevel($data['member_lvl']);
         }
         show200($data);
     }
+/**
+     * @title 认证接口
+     * @desc  (认证接口)
+     * @input {"name":"id","require":"true","type":"int","desc":"用户id"}
+     * @input {"name":"id_photo_positive","require":"true","type":"string","desc":"身份证正面图片"}
+     * @input {"name":"id_photo_reverse","require":"true","type":"string","desc":"身份证反面图片"}
+     * @input {"name":"id_photo_unity","require":"true","type":"string","desc":"身份证人像图片"}
+     * @input {"name":"china_id","require":"true","type":"string","desc":"身份证号"}
+     * @input {"name":"alipay_id","require":"true","type":"string","desc":"支付宝号"}
+     * @input {"name":"alipay_qrcode","require":"true","type":"string","desc":"支付宝二维码"}
+     * @input {"name":"real_name","require":"true","type":"string","desc":"真实名字"}
+     * @input {"name":"mobile","require":"true","type":"string","desc":"手机号"}
+     * @input {"name":"yzm","require":"true","type":"int","desc":"验证码"}
+     * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
+     * @output {"name":"msg","type":"string","desc":"信息说明"}
+     */
 
 
+    public function certification()
+    {
+        $requires = array("id"=>"缺少会员id","id_photo_positive"=>"缺少身份证正面照","id_photo_reverse"=>"缺少身份证反面照",
+                    "id_photo_unity"=>"缺少人像图片","china_id"=>"缺少身份证号","alipay_id"=>"缺少支付宝号","alipay_qrcode"=>"缺少支付宝收款码",
+                    "id_photo_unity"=>"缺少名称",);
+        $params = array();
+        foreach($requires as $k => $v)
+        {
+            if(empty($this->input->post($k))){
+                show300($v);
+            }
+            $params[$k] = trim($this -> input -> post($k));
+        }      		
+		//模拟数据
+        $params['id'] = 13;
+        $params['alipay_id'] = '17681878141';
+        $params['id_photo_positive'] = 'dsfagasdagvsd';
+        $params['id_photo_reverse'] = 'dsfagasdagvsd';
+        $params['id_photo_unity'] = 'dsfagasdagvsd';
+        $params['alipay_qrcode'] = 'dsfagasdagvsd';
+        $params['china_id'] = '142201199205154021';
+        $params['real_name'] = '郭丽琴11';
+        $params['mobile'] = '17681878141';
+        $params['yzm'] = '6666';
+		$this->session->set_tempdata('yzm',$params['yzm'],60);
+		//模拟数据
+		
+		
+		$id = $params['id'];
+		$mobile = $this->member_model->getwhereRow(['id' => $id],'mobile')['mobile'];
+		if($params['mobile']!=$mobile){
+			show300('认证手机号与注册手机号不一致,前往更改手机号再认证');
+		}
+		if ($params['yzm'] == $this->session->tempdata('yzm')){
+			unset($params['id'],$params['mobile'],$params['yzm']);
+			//在此验证支付宝号是否有效；拿到支付宝相关信息更改，先模拟
+					$alipay_id_res=1;
+					if(!$alipay_id_res){
+						show300('支付宝号无效,请重新填写');
+					}
+			
+			$this->member_model->start();
+			$params['is_valid'] = 1;
+			$referee_res= $this->member_model->updateWhere(['id' => $id], $params);//认证更新
+			if($referee_res){
+				$level_res=$this->updateLevel($id);//升级
+				$resouce['id']=$id;
+				$resouce_res=$this->member_resouce_model->insert($resouce);//会员资产增加
+				if($level_res&&$resouce_res){
+					$this->member_model->commit();
+					show200('认证成功'); 
+				}else{
+					$this->member_model->rollback();
+					show300('认证失败'); 
+					}
+			}else{
+				$this->member_model->rollback();
+				show300('认证失败');
+				}	
+		}else{
+				show300('验证码错误');				
+			}    
+    }
     //升级会员等级判断
     public function updateLevel($id)
     {
-        //print_r($id);exit;
+       // print_r($id);exit;
         if (!$id) {
             show300('会员id不能为空');
         }
@@ -402,23 +508,104 @@ class Member extends CI_Controller
             'data' => $ids
         ];
         $data = $this->member_model->getWhere($where, $select = '*', $dbArray = [], $where_in);
+
         if (!empty($data)) {
             foreach ($data as $val) {
-                switch ($val['member_lvl']) {
-                    case "1":
-                        $num = 9;
-                        break;
-                    default:
-                        $num = 3;
-                }
-                $cWhere = [
+
+                $pwhere=[
+                    'referee_id'=>$val['id'],
                     'is_valid' => 1,
-                    'referee_id' => $val['id'],
-                    'member_lvl' => $val['member_lvl']
 
                 ];
+                $temp=$this->member_model->getWhere($pwhere,$select='id',$dbArray=[],$where_in=[]);
+                $result=[];//获取直推id
+                if($temp){
+                    foreach ($temp as $val1){
 
-                $count = $this->member_model->getWhere_num($cWhere);
+                        array_push($result,$val1['id']);
+                    }
+                }
+
+
+                switch ($val['member_lvl']) {
+                    case "2":
+                        $num = 3;
+                        $cWhere = [
+                            'is_valid' => 1,
+                            'member_lvl' =>1
+                        ];
+                        break;
+                    case "3":
+                        $cWhere = [
+                            'is_valid' => 1,
+                            'member_lvl' =>2
+                        ];
+                        $num = 3;
+                        break;
+                    case "4":
+                        $cWhere = [
+                            'is_valid' => 1,
+                            'member_lvl' =>3
+                        ];
+
+                        $num = 3;
+                        break;
+                    case "5":
+                        $cWhere = [
+                            'is_valid' => 1,
+                            'member_lvl' =>4
+                        ];
+                        $num = 3;
+                        break;
+                    case "6":
+                        $cWhere = [
+                            'is_valid' => 1,
+                            'member_lvl' =>5
+                        ];
+                        $num = 3;
+                        break;
+                    case "7":
+                        $cWhere = [
+                            'is_valid' => 1,
+                            'member_lvl' =>6
+
+                        ];
+                        $num = 3;
+                        break;
+                    case "8":
+                        $cWhere = [
+                            'is_valid' => 1,
+                            'member_lvl' =>7
+                        ];
+                        $num = 3;
+
+                        break;
+
+                    default:
+                        $cWhere = [
+                            'is_valid' => 1,
+                            'referee_id' => $val['id'],
+                            'member_lvl' => 1
+
+                        ];
+                        $num = 9;
+                }
+
+                $cWhere_in = [
+                    'field' => 'referee_id',
+                    'data' => $result
+                ];
+
+
+				if($val['member_lvl']==1){
+                    $count = $this->member_model->getWhere_num($cWhere);//0级升一级，9个直推
+                }else{
+				    //除一级以外的升级
+                    $count =$this->member_model->getRefereeNum($cWhere,$dbArray=[],$cWhere_in,$groupBy='referee_id');
+
+                }
+
+
                 //升级
                 if ($count >= $num) {
                     $update['member_lvl'] = $val['member_lvl'] + 1;
@@ -431,6 +618,17 @@ class Member extends CI_Controller
 
         return true;
     }
-
-
+	
+		/**
+     * @title 图片上传接口
+     * @desc  (图片上传接口)
+     * @input {"name":"yzm","require":"true","type":"int","desc":"验证码"}
+     * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
+     * @output {"name":"data.picPath","require":"true","type":"string","desc":"图片路径"}
+     */
+	
+	public function do_upload(){
+		$this->upload();
+	}
+	 
 }
