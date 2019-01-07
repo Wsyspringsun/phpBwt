@@ -98,6 +98,7 @@ class CI_Controller {
 		return $offset;
 	}
 	public function upload(){
+		//print_r(666);exit;
 			if($_FILES["file"]["error"]){
 				echo $_FILES["file"]["error"];    
 			}else{
@@ -114,7 +115,6 @@ class CI_Controller {
 									$this->load->library('upload', $config);
 									$this->upload->do_upload('file');
 									$data['picPath']=PHOTOPATH.$filename;
-									//return $data['picPath'];
 									show200($data);
 							}        
 					}else{
