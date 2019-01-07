@@ -533,14 +533,12 @@ class Member extends CI_Controller
                         $cWhere = [
                             'is_valid' => 1,
                             'member_lvl' =>1
-
                         ];
                         break;
                     case "3":
                         $cWhere = [
                             'is_valid' => 1,
                             'member_lvl' =>2
-
                         ];
                         $num = 3;
                         break;
@@ -548,7 +546,6 @@ class Member extends CI_Controller
                         $cWhere = [
                             'is_valid' => 1,
                             'member_lvl' =>3
-
                         ];
 
                         $num = 3;
@@ -557,16 +554,13 @@ class Member extends CI_Controller
                         $cWhere = [
                             'is_valid' => 1,
                             'member_lvl' =>4
-
                         ];
                         $num = 3;
                         break;
                     case "6":
                         $cWhere = [
                             'is_valid' => 1,
-                            'referee_id' => $val['id'],
                             'member_lvl' =>5
-
                         ];
                         $num = 3;
                         break;
@@ -582,7 +576,6 @@ class Member extends CI_Controller
                         $cWhere = [
                             'is_valid' => 1,
                             'member_lvl' =>7
-
                         ];
                         $num = 3;
 
