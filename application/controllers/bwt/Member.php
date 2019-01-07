@@ -494,7 +494,7 @@ class Member extends CI_Controller
 			}    
     }
     //升级会员等级判断
-    public function updateLevel($id=19)
+    public function updateLevel($id)
     {
        // print_r($id);exit;
         if (!$id) {
@@ -609,7 +609,7 @@ class Member extends CI_Controller
                 }else{
 				    //除一级以外的升级
                     $count =$this->member_model->getRefereeNum($cWhere,$dbArray=[],$cWhere_in,$groupBy='referee_id');
-                    
+
                 }
 
 
