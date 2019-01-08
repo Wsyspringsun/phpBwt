@@ -19,6 +19,7 @@ class Machine_model extends MY_Model
 	}
 	public function getMachineCount(){
 		$this->db->from($this->table);
+		$this->db->where('price !=',0);
         return $this->db->count_all_results();
 	}
 }
