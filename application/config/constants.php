@@ -100,6 +100,6 @@ define('SMS_ID',"SMS_141945019");       //短信平台id
 define('SMS_SIGN', "众合致胜");       //短信平台签名
 define('PHOTOPATH', "http://bwt.glq.cc/upload/");       //图片路径  g
 define('TEANLIMIT', 3);       //团队显示条数 g
-define('HOMEMACHINE',5);       //矿机列表显示条数 g
+define('HOMEMACHINE',6);       //矿机列表显示条数 g
 define('SITENAME','比特币项目');       //站点名称 g
 define('YAMLENGTH',4);       //验证码长度
