@@ -91,10 +91,28 @@ class Bill_model extends MY_Model
     }
 
     //获取矿机租用明细
-    public function machine_bill_list($member_id,$offset)
+    public function machine_bill_list($member_id, $type, $offset)
     {
-        return $this -> db -> order_by('create_date DESC') -> limit(PAGESIZE,$offset) -> get_where($this->tbl_member_machine_bill,array('member_id' => $member_id))->result();
+//echo 'type:'.$type;
+        $data = null;
+        if($type == 0){
+            //有效的
+            $data =  $this -> db -> order_by('create_date DESC') -> limit(PAGESIZE,$offset) -> where('`prod_cnt` < `bill_hour_amount`') -> get_where($this->tbl_member_machine_bill,array('member_id' => $member_id))->result();
+
+        }else{
+            //过期的
+            $data =  $this -> db -> order_by('create_date DESC') -> limit(PAGESIZE,$offset) -> where('`prod_cnt` >= `bill_hour_amount`') -> get_where($this->tbl_member_machine_bill,array('member_id' => $member_id ))->result();
+        }
+        //echo $this->db->last_query();
+        return $data;
     }
+
+    //获取矿机订单详情
+    public function machine_bill_detail($id){
+        return $this -> db -> get_where($this->tbl_member_machine_bill,array('id' => $id))->row();
+    }
+
+
     /** 处理矿机订单 End **/
 
     /** 处理原始资产交易 **/
@@ -340,13 +358,13 @@ class Bill_model extends MY_Model
         // TODO:可售额度倍数需要根据等级获得，更新买家资产,增加原始资产/可售额度=1.7*amount
         $buy_member_id = $origin_bill -> buy_member_id;
         $sql_update_buy = "update ".$this -> tbl_member_resouce." set origin_amount=origin_amount+".$origin_bill -> amount.",saleable_top=saleable_top+".SALEABLE_TOP_MUL_NUM * $origin_bill -> amount." where member_id=".$buy_member_id.";";
-echo $sql_update_buy;
+//echo $sql_update_buy;
         $this -> db -> query($sql_update_buy);
         //更新卖家资产,减少可交易资产(卖出数量+手续费)
         $sale_member_id = $origin_bill -> sale_member_id;
         $sql_update_sale = "update ".$this -> tbl_member_resouce." set tradeable_amount=tradeable_amount-".($origin_bill -> amount + $origin_bill -> tax)." where member_id=".$sale_member_id.";";
         $this -> db -> query($sql_update_sale);
-echo $sql_update_sale;
+//echo $sql_update_sale;
         //减除卖家冻结额度
 $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $origin_bill -> tax));
 

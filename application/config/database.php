@@ -95,9 +95,9 @@ $db['bangwei'] = array(
 );
 $db['bwt'] = array(
 	'dsn'	=> '',
-	'hostname' => '127.0.0.1',
+	'hostname' => '192.168.0.104',
 	'username' => 'root',
-	'password' => 'root',
+	'password' => 'springsun',
 	'database' => 'bwt',
 	'dbdriver' => 'mysqli',
 	'dbprefix' => '',

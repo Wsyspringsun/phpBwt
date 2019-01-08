@@ -27,7 +27,11 @@ class Bill extends CI_Controller
     **/
     public function buy_machine()
     {
-        //$id = $this->input->post('id');
+        //:改session
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
         $requires = array("machine_id"=>"缺少矿机id","bill_hour_amount"=>"缺少租用时长");
         $params = array();
         foreach($requires as $k => $v)
@@ -37,9 +41,8 @@ class Bill extends CI_Controller
             }
             $params[$k] = $this -> input -> post($k);
         }
-        //TODO:改session
-        $loginer_id = 1;
-        params["member_id"] = $loginer_id;
+        
+        $params["member_id"] = $loginer_id;
         $data = $this -> bill_model -> buyMachine($params);
         if($data > 0){
             show200($data);
@@ -50,35 +53,69 @@ class Bill extends CI_Controller
 
     /**
     * @title 购买矿机清单列表
-    * @desc  执行矿机购买流程
+    * @desc  购买矿机清单列表
     * @input {"name":"page","require":"true","type":"int","desc":"页码，1开始"}	
-    * @input {"name":"member_id","require":"true","type":"int","desc":"会员id"}	
+    * @input {"name":"type","require":"true","type":"int","desc":"可用:0,过期:1"}	
     * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
     * @output {"name":"msg","type":"string","desc":"信息说明"}
-    * @output {"name":'create_date',"type":'timestamp',"desc":'创建时间'}
-    * @output {"name":'modify_date',"type":'timestamp',"desc":'更新时间'}
-    * @output {"name":'member_id',"type":'int(11)',"desc":'会员id'}
-    * @output {"name":'machine_id',"type":'int(11)',"desc":'矿机id'}
-    * @output {"name":'machine_title',"type":'varchar(45)',"desc":'矿机名称'}
-    * @output {"name":'bill_unit_produce',"type":'double(16,6)',"desc":'每小时产量'}
-    * @output {"name":'bill_price',"type":'double(16,6)',"desc":'单位租金'}
-    * @output {"name":'bill_hour_amount',"type":'int(11)',"desc":'租用时长'}
-    * @output {"name":'bill_real_pay',"type":'double(16,6)',"desc":'花费金额'}
-    * @output {"name":'bill_date_start',"type":'datetime',"desc":'租用起始时间'}
-    * @output {"name":'bill_date_end',"type":'datetime',"desc":'租用截止时间'}
-    **/
+    * @output {"name":"data.create_date","type":"timestamp","desc":"创建时间"}
+    * @output {"name":"data.modify_date","type":"timestamp","desc":"更新时间"}
+    * @output {"name":"data.member_id","type":"int(11)","desc":"会员id"}
+    * @output {"name":"data.machine_id","type":"int(11)","desc":"矿机id"}
+    * @output {"name":"data.machine_title","type":"varchar(45)","desc":"矿机名称"}
+    * @output {"name":"data.bill_unit_produce","type":"double(16,6)","desc":"每小时产量"}
+    * @output {"name":"data.bill_price","type":"double(16,6)","desc":"单位租金"}
+    * @output {"name":"data.bill_hour_amount","type":"int(11)","desc":"租用时长"}
+    * @output {"name":"data.bill_real_pay","type":"double(16,6)","desc":"花费金额"}
+    * @output {"name":"data.bill_date_start","type":"datetime","desc":"租用起始时间"}
+    * @output {"name":"data.bill_date_end","type":"datetime","desc":"租用截止时间"}
+    */
     public function machine_bill_list()
     {
-        if(empty($this->input->post('member_id')))
-        {
-            show300('缺少会员id');
+        //$loginer_id = 1;
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
         }
+        $type = $this->input->post('type') == null ? 0 : $this->input->post('type');
         $page = $this->input->post('page') == null ? 1 : $this->input->post('page');
         $offset = $this -> getPage($page,PAGESIZE) ;
-        $member_id = $this->input->post('member_id');
-        $data = $this -> bill_model -> machine_bill_list($member_id,$offset);
+        $data = $this -> bill_model -> machine_bill_list($loginer_id, $type, $offset);
         show200($data);
     }
+
+    /**
+    * @title 购买矿机清单详情
+    * @desc  购买矿机清单详情
+    * @input {"name":"id","require":"true","type":"int","desc":"订单id"}	
+    * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
+    * @output {"name":"msg","type":"string","desc":"信息说明"}
+    * @output {"name":"data.create_date","type":"timestamp","desc":"创建时间"}
+    * @output {"name":"data.modify_date","type":"timestamp","desc":"更新时间"}
+    * @output {"name":"data.member_id","type":"int(11)","desc":"会员id"}
+    * @output {"name":"data.machine_id","type":"int(11)","desc":"矿机id"}
+    * @output {"name":"data.machine_title","type":"varchar(45)","desc":"矿机名称"}
+    * @output {"name":"data.bill_unit_produce","type":"double(16,6)","desc":"每小时产量"}
+    * @output {"name":"data.bill_price","type":"double(16,6)","desc":"单位租金"}
+    * @output {"name":"data.bill_hour_amount","type":"int(11)","desc":"租用时长"}
+    * @output {"name":"data.bill_real_pay","type":"double(16,6)","desc":"花费金额"}
+    * @output {"name":"data.bill_date_start","type":"datetime","desc":"租用起始时间"}
+    * @output {"name":"data.bill_date_end","type":"datetime","desc":"租用截止时间"}
+    */
+    public function machine_bill_detail()
+    {
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
+        $id = $this->input->post('id') ;
+        if($id == null){
+            show300("缺少订单id");
+        }
+        $data = $this -> bill_model -> machine_bill_detail($id);
+        show200($data);
+    }
+
 
     /** 处理矿机订单 End **/
 
@@ -108,9 +145,14 @@ class Bill extends CI_Controller
         if($amount <= 0 ){
             show300("数量必须大于0");
         }
-        //TODO:登录用户
-        $loginer_id = 1;
+        //登录用户
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
+
         $data = $this -> bill_model -> origin_2_totrade_res($loginer_id, $amount);
+
         if(is_string($data)){
             show300($data);
         }else{
@@ -144,8 +186,11 @@ class Bill extends CI_Controller
             }
             $params[$k] = $this -> input -> post($k);
         }
-        //TODO:获取登录用户的id
-        $loginer_id = 1;
+        //获取登录用户的id
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
         $buy_member = $this->member_model->getwhereRow(['id' => $loginer_id],'*');
         //必须认证用户可以买入
         if($buy_member["is_valid"] != "1"){
@@ -183,8 +228,12 @@ class Bill extends CI_Controller
             }
             $params[$k] = $this -> input -> post($k);
         }
-        //TODO:改成登录者id
-        $params["loginer_id"] = 1;
+        //改成登录者id
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
+        $params["loginer_id"] = $loginer_id;
         $data = $this -> bill_model -> cancelBuyOriginRes($params);
         if($data === true){
             show200(true);
@@ -267,8 +316,11 @@ class Bill extends CI_Controller
     **/
     public function payed_confirm_4_bill_origin_res()
     {
-        //TODO:获取登录用户，没有登录用户则推出
-        $loginer_id = 2;
+        //获取登录用户，没有登录用户则推出
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
 
         $requires = array("origin_bill_id" => "缺少原始资产业务订单的id");
         $params = array();
@@ -296,8 +348,11 @@ class Bill extends CI_Controller
     **/
     public function buy_bill_origin_res_list()
     {
-        //TODO:获取登录用户，没有登录用户则推出
-        $loginer_id = 1;
+        //获取登录用户，没有登录用户则推出
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
         $page = $this->input->post('page') == null ? 1 : $this->input->post('page');
         $offset = $this -> getPage($page,PAGESIZE) ;
         $data = $this -> bill_model -> buy_origin_bill_res_list($offset, $loginer_id );
@@ -317,8 +372,11 @@ class Bill extends CI_Controller
     public function sale_bill_origin_res_list()
     {
         $page = $this->input->post('page') == null ? 1 : $this->input->post('page');
-        //TODO:获取登录用户，没有登录用户则推出
-        $loginer_id = 2;
+        //:获取登录用户，没有登录用户则推出
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
         $offset = $this -> getPage($page,PAGESIZE) ;
         $member_id = $loginer_id;
         $data =  $this -> bill_model -> sale_origin_bill_res_list($member_id, $offset);
