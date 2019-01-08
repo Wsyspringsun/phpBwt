@@ -72,7 +72,9 @@ class SmsDemo
      */
     public static function sendSms($phone,$tplId,$sign,$par) {  //$par为短信模板的参数,格式如下:['code'=>123,'name'=>'test'];
 
-        // 初始化SendSmsRequest实例用于设置发送短信的参数
+        //print_r(5564654);exit;
+		
+		// 初始化SendSmsRequest实例用于设置发送短信的参数
         $request = new SendSmsRequest();
 
         //可选-启用https协议
