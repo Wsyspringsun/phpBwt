@@ -59,6 +59,7 @@ class Task extends CI_Controller
             }
             //矿机产出
             $this -> bill_model -> machineProduct();
+            /**  释放改为手动释放
             //每天凌晨1点进行每日计算
             $now = time();
             $hour = date('H', $now);
@@ -66,6 +67,7 @@ class Task extends CI_Controller
                 //释放可售资产为可交易资产
                 $this -> bill_model -> toTradeRes2TradeableRes();
             }
+            **/
             
             sleep(3600);          // 每小时钟执行一次
             
