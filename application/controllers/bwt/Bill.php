@@ -397,10 +397,13 @@ class Bill extends CI_Controller
     **/
     public function bill_origin_res_list()
     {
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
         $type = $this->input->post('type');
         $page = $this->input->post('page') == null ? 1 : $this->input->post('page');
         $offset = $this -> getPage($page,PAGESIZE) ;
-        $loginer_id = 1;
         $data =  $this -> bill_model -> origin_bill_res_list($type, $offset, $loginer_id);
         if(is_string($data)){
             show300($data);
@@ -419,6 +422,10 @@ class Bill extends CI_Controller
     **/
     public function bill_origin_res_detail()
     {
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
         $type = $this->input->post('type');
         $id = $this->input->post('id');
         $requires = array("type" => "缺少操作类型", "id" => "缺少订单id");
@@ -433,7 +440,6 @@ class Bill extends CI_Controller
         $page = $this->input->post('page') == null ? 1 : $this->input->post('page');
 
         $offset = $this -> getPage($page,PAGESIZE) ;
-        $loginer_id = 1;
         $data =  $this -> bill_model -> origin_bill_res_detail($type, $loginer_id, $id);
         if(is_string($data)){
             show300($data);
@@ -462,7 +468,10 @@ class Bill extends CI_Controller
     **/
     public function bill_origin_res_tax()
     {
-        $loginer_id = 2;
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
         $requires = array("buy_amount" => "缺少买入数量");
         $params = array();
         foreach($requires as $k => $v)
@@ -483,6 +492,34 @@ class Bill extends CI_Controller
 
 
     /** 处理交易原始资产相关数据 End **/
+
+    /** 处理可售资产释放  **/
+
+    /**
+    * @title 释放可售资产为可交易资产
+    * @desc  释放可售资产为可交易资产
+    * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
+    * @output {"name":"msg","type":"string","desc":"信息说明"}
+    * @output {"name":"data","type":"boolean","desc":"true:成功"}
+    **/
+    public function releaseTradeableRes()
+    {
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
+        //释放可售资产为可交易资产
+        $data = $this -> bill_model -> releaseTradeableRes($loginer_id);
+        if(is_string($data)){
+            show300($data);
+        }else{
+            show200($data);
+        }
+
+    }
+
+
+    /** 处理可售资产释放 End **/
 
         
     

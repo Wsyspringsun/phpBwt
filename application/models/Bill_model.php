@@ -11,6 +11,7 @@ class Bill_model extends MY_Model
     private $tbl_origin_res_sale_bill ='origin_res_sale_bill';//原始资产卖出下单表
     private $tbl_origin_res_pay_bill ='origin_res_pay_bill';//原始资产卖出下单表
     private $tbl_key_val_params ='key_val_params';//各种参数数据对照表
+    private $tbl_totrade_2_trade_bill ='totrade_2_trade_bill';//可售资产释放位可交易资产记录
 
     public function __construct()
     {
@@ -21,6 +22,8 @@ class Bill_model extends MY_Model
         parent::__construct($this->tbl_origin_res_sale_bill);
         parent::__construct($this->tbl_origin_res_pay_bill);
         parent::__construct($this->tbl_key_val_params);
+        parent::__construct($this->tbl_totrade_2_trade_bill);
+
 
 	$this->load->model(array('member_model'));		
     }
@@ -80,7 +83,7 @@ class Bill_model extends MY_Model
         $new_id = $this -> db -> insert_id();
         //更新会员资源数据
         $this -> db -> where("id",$member_id);
-        $this -> db -> update($this -> tbl_member_resouce,$mem_bill_outline);
+        $this -> db -> update($this -> tbl_member_resouce, $mem_bill_outline);
         $this->db->trans_complete();
 
         if ($this->db->trans_status() === FALSE)
@@ -491,14 +494,16 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
         $this -> db -> query($sql_update);
     }
 
-    //释放可售资产为可交易资产
+    //释放可售资产为可交易资产,全体释放
     public function toTradeRes2TradeableRes(){
         $this->db->trans_start();
         //插入明细记录
-        $query_i = "insert into totrade_2_trade_bill ( `realease_amount`, `totrade_amount_old`, `totrade_amount`, `trade_amount_old`, `trade_amount`, `member_id`) select   truncate(`totrade_amount` * 0.002,0), `totrade_amount`, `totrade_amount` -  truncate(`totrade_amount` * 0.002,0)  , `tradeable_amount`, `tradeable_amount` + truncate(`totrade_amount` * 0.002,0),  `member_id` from  member_resouce t where t.`totrade_amount` >= 500; ";
+        //整数$query_i = "insert into totrade_2_trade_bill ( `realease_amount`, `totrade_amount_old`, `totrade_amount`, `trade_amount_old`, `trade_amount`, `member_id`) select   truncate(`totrade_amount` * 0.002,0), `totrade_amount`, `totrade_amount` -  truncate(`totrade_amount` * 0.002,0)  , `tradeable_amount`, `tradeable_amount` + truncate(`totrade_amount` * 0.002,0),  `member_id` from  member_resouce t where t.`totrade_amount` >= 500; ";
+        $query_i = "insert into totrade_2_trade_bill ( `realease_amount`, `totrade_amount_old`, `totrade_amount`, `trade_amount_old`, `trade_amount`, `member_id`) select   `totrade_amount` * 0.002, `totrade_amount`, `totrade_amount` -  `totrade_amount` * 0.002, `tradeable_amount`, `tradeable_amount` + `totrade_amount` * 0.002,  `member_id` from  member_resouce t where t.`totrade_amount` >= 0.0005; ";
         $this -> db -> query($query_i);
         //更新资产记录
-        $query_u = "update member_resouce set `tradeable_amount` = `tradeable_amount` + truncate(`totrade_amount` * 0.002,0) , `totrade_amount`= `totrade_amount` - truncate(`totrade_amount` * 0.002,0) where `totrade_amount` >= 500;";
+        //整数释放$query_u = "update member_resouce set `tradeable_amount` = `tradeable_amount` + truncate(`totrade_amount` * 0.002,0) , `totrade_amount`= `totrade_amount` - truncate(`totrade_amount` * 0.002,0) where `totrade_amount` >= 500;";
+        $query_u = "update member_resouce set `tradeable_amount` = `tradeable_amount` + `totrade_amount` * 0.002 , `totrade_amount`= `totrade_amount` - `totrade_amount` * 0.002 where `totrade_amount` >= 0.0005;";
         $this -> db -> query($query_u);
 
         $this->db->trans_complete();
@@ -511,6 +516,48 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
             return true;
         }
     }
+
+    //指定会员释放
+    public function releaseTradeableRes($member_id){
+        //获取用户资产
+        $member_res = $this -> getBillOutline($member_id);
+        //判断可售资产是否够0.0005
+        if($member_res -> totrade_amount < 0.0005){
+            return "可售资产不足，需要:0.0005以上;拥有".$member_res -> totrade_amount;
+        }
+        //判断今天是否已经有释放
+        $today_data = $this -> db -> where("member_id", $member_id) -> where(" TO_DAYS(NOW()) = TO_DAYS(create_date) ") -> get($this -> tbl_totrade_2_trade_bill) -> row();
+        if($today_data != null){
+            return "每天一次机会,今天已经释放过了";
+        }
+        $this->db->trans_start();
+        //插入明细记录
+        $realease_amount = $member_res -> totrade_amount * 0.002;
+        $data = array(
+            "realease_amount" => $realease_amount,
+            "totrade_amount_old" => $member_res -> totrade_amount,
+            "totrade_amount" => $member_res -> totrade_amount - $realease_amount,
+            "trade_amount_old" => $member_res -> tradeable_amount,
+            "trade_amount" => $member_res -> tradeable_amount + $realease_amount,
+            "member_id" => $member_id
+        );
+        $this -> db -> insert($this -> tbl_totrade_2_trade_bill, $data);
+        $newid = $this -> db -> insert_id();
+        //更新资产记录
+        $this -> db -> set("totrade_amount", $member_res -> totrade_amount - $realease_amount);
+        $this -> db -> set("tradeable_amount", $member_res -> tradeable_amount + $realease_amount);
+        $this -> db -> where("member_id", $member_id);
+        $this -> db -> update($this -> tbl_member_resouce);
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === FALSE)
+        {
+            return "事务执行失败";
+        }else{
+            return true;
+        }
+    }
+
 
     //更新矿机订单执行次数
     public function machineProduct(){
