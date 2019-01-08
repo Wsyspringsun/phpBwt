@@ -17,5 +17,9 @@ class Machine_model extends MY_Model
 		$result = $this->db->get()->result_array();
 		return $result;
 	}
+	public function getMachineCount(){
+		$this->db->from($this->table);
+        return $this->db->count_all_results();
+	}
 }
 ?>

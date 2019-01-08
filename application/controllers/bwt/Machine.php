@@ -31,7 +31,8 @@ class Machine extends CI_Controller
 		$page=empty($this->input->post('page'))?1:($this->input->post('page'));//页数
 		//$page=2;
 		$offset=$this->getPage($page,HOMEMACHINE);//偏移量
-		$data=$this->machine_model->getMachineList(HOMEMACHINE,$offset);
+		$data['data']=$this->machine_model->getMachineList(HOMEMACHINE,$offset);
+		$data['count']=$this->machine_model->getMachineCount();
 		show200($data);
     }
 	
@@ -53,7 +54,7 @@ class Machine extends CI_Controller
     public function machineDetail()
     {
 		$id=trim($this->input->post('id'));
-		$id=1;
+		//$id=1;
 		if(!$id){
 			show300('矿机id不能为空');
 		}
