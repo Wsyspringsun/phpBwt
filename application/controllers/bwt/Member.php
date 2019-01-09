@@ -332,7 +332,7 @@ class Member extends CI_Controller
         }
         //print_r($this->session->tempdata('loginYzm'));exit;
         if (strtolower($this->session->tempdata('loginYzm')) != $loginYzm) {
-            show300('验证码错误');
+         //TODO:del   show300('验证码错误');
         }
         $user_pad = $this->member_model->getwhereRow(['mobile' => $mobile], 'pwd,id');
         //$data['id']=$user_pad['id'];
