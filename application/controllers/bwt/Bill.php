@@ -529,6 +529,15 @@ class Bill extends CI_Controller
         }
     }
 
+    /**
+    * @title 领取矿机产值变为原始资产
+    * @desc  领取矿机产值变为原始资产,一键全领
+    * @input {"name":"buy_amount","require":"true","type":"int","desc":"买入数量"}
+    **/
+    public function machine_prod_2_origin_res()
+    {
+        //TODO:判断和上次领取间隔时间24小时
+    }
 
 
     /** 处理交易原始资产相关数据 End **/
@@ -548,6 +557,7 @@ class Bill extends CI_Controller
         if($loginer_id == null){
             show300("请先登录");
         }
+        //TODO:判断和上次领取间隔时间24小时
         //释放可售资产为可交易资产
         $data = $this -> bill_model -> releaseTradeableRes($loginer_id);
         if(is_string($data)){
