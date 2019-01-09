@@ -43,6 +43,8 @@ class Bill extends CI_Controller
         }
         
         $params["member_id"] = $loginer_id;
+        //TODO:用参数控制,定量为3600小时
+        $params["bill_hour_amount"] = 3600;
         $data = $this -> bill_model -> buyMachine($params);
         if($data > 0){
             show200($data);
@@ -67,6 +69,9 @@ class Bill extends CI_Controller
     * @output {"name":"data.bill_price","type":"double(16,6)","desc":"单位租金"}
     * @output {"name":"data.bill_hour_amount","type":"int(11)","desc":"租用时长"}
     * @output {"name":"data.bill_real_pay","type":"double(16,6)","desc":"花费金额"}
+    * @output {"name":"data.prod_cnt","type":"int","desc":"运营时间(小时)"}
+    * @output {"name":"data.prod_amount","type":"double(16,6)","desc":"已生产产量"}
+    * @output {"name":"data.to_origin_amount","type":"double(16,6)","desc":"已领取数量"}
     * @output {"name":"data.bill_date_start","type":"datetime","desc":"租用起始时间"}
     * @output {"name":"data.bill_date_end","type":"datetime","desc":"租用截止时间"}
     */
@@ -99,6 +104,11 @@ class Bill extends CI_Controller
     * @output {"name":"data.bill_price","type":"double(16,6)","desc":"单位租金"}
     * @output {"name":"data.bill_hour_amount","type":"int(11)","desc":"租用时长"}
     * @output {"name":"data.bill_real_pay","type":"double(16,6)","desc":"花费金额"}
+    * @output {"name":"data.prod_cnt","type":"int","desc":"已运营时间(小时)"}
+    * @output {"name":"data.prod_cnt_other","type":"int","desc":"剩余运营时间(小时)"}
+    * @output {"name":"data.prod_amount","type":"double(16,6)","desc":"已生产产量"}
+    * @output {"name":"data.to_origin_amount","type":"double(16,6)","desc":"已领取数量"}
+    * @output {"name":"data.ready_origin_amount","type":"double(16,6)","desc":"可领取数量"}
     * @output {"name":"data.bill_date_start","type":"datetime","desc":"租用起始时间"}
     * @output {"name":"data.bill_date_end","type":"datetime","desc":"租用截止时间"}
     */
@@ -112,8 +122,24 @@ class Bill extends CI_Controller
         if($id == null){
             show300("缺少订单id");
         }
-        $data = $this -> bill_model -> machine_bill_detail($id);
-        show200($data);
+        $data = $this -> bill_model -> machine_bill_detail($loginer_id, $id);
+
+        if(is_string($data)){
+            show300($data);
+        }else{
+            if($data != null){
+                $data -> prod_cnt_other = $data -> bill_hour_amount - $data -> prod_cnt;
+                $data -> ready_origin_amount = $data -> prod_amount - $data -> to_origin_amount;
+                if($data -> bill_hour_amount <= $data -> prod_cnt){
+                    $data -> stat = '过期';
+                }else{
+                    $data -> stat = '运行中';
+                }
+            }
+            show200($data);
+        }
+
+        
     }
 
 
@@ -125,12 +151,18 @@ class Bill extends CI_Controller
      * @title 原始资产转为可售资产
      * @desc  原始资产转为可售资产
      * @input {"name":"amount","require":"true","type":"int","desc":"转的数量"}	
+     * @input {"name":"pwd_second","require":"true","type":"int","desc":"二级密码"}	
      * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
      * @output {"name":"msg","type":"string","desc":"信息说明"}
      * @output {"name":"data","type":"int","desc":"是否成功"}
     **/
     public function origin_2_totrade_res()
     {
+        $pwd_second = $this->input->post("pwd_second");
+        if($pwd_second == null){
+            show300("缺少二级密码");
+        }
+
         $amount = $this->input->post("amount");
         if($amount == null){
             show300("缺少转化数量");
@@ -150,6 +182,14 @@ class Bill extends CI_Controller
         if($loginer_id == null){
             show300("请先登录");
         }
+        $member = $this->member_model->getwhereRow(['id' => $loginer_id],'*');
+        if($member == null){
+            return "缺少用户记录";
+        }
+        //验证二级密码
+        if($member["pwd_second"] != $pwd_second){
+            show300("二级密码错误");
+        }
 
         $data = $this -> bill_model -> origin_2_totrade_res($loginer_id, $amount);
 
@@ -168,7 +208,7 @@ class Bill extends CI_Controller
     /**
      * @title 购买原始资产下单
      * @desc  会员买入挂单
-     * @input {"name":"second_pwd","require":"true","type":"string","desc":"买家会员二级密码"}	
+     * @input {"name":"pwd_second","require":"true","type":"string","desc":"买家会员二级密码"}	
      * @input {"name":"amount","require":"true","type":"int","desc":"购买数量"}	
      * @input {"name":"unit_price","require":"true","type":"int","desc":"单价"}	
      * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
@@ -177,7 +217,7 @@ class Bill extends CI_Controller
      **/
     public function buy_bill_origin_res()
     {
-        $requires = array("second_pwd"=>"缺少会员密码","amount"=>"缺少购买数量","unit_price"=>"缺少购买单价");
+        $requires = array("pwd_second"=>"缺少会员密码","amount"=>"缺少购买数量","unit_price"=>"缺少购买单价");
         $params = array();
         foreach($requires as $k => $v)
         {
@@ -197,7 +237,7 @@ class Bill extends CI_Controller
             show300("只有认证用户可以下单，请尽快认证");
         }
         //验证二级密码
-        if($buy_member["pwd_second"] != $params["second_pwd"]){
+        if($buy_member["pwd_second"] != $params["pwd_second"]){
             show300("二级密码错误");
         }
         $params["buy_member_id"] = $loginer_id;

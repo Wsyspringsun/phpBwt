@@ -35,7 +35,7 @@ class Bill_model extends MY_Model
     {
         $this->db->trans_start();
         $machine_id = $params["machine_id"];
-        var_dump($machine_id);
+//var_dump($machine_id);
         //获取矿机，判断矿机是否存在
         $m =  $this->db->get_where('machine',array('id' => $machine_id))->row();
         if($m == null)
@@ -111,8 +111,15 @@ class Bill_model extends MY_Model
     }
 
     //获取矿机订单详情
-    public function machine_bill_detail($id){
-        return $this -> db -> get_where($this->tbl_member_machine_bill,array('id' => $id))->row();
+    public function machine_bill_detail($loginer_id, $id){
+        $data =  $this -> db -> get_where($this->tbl_member_machine_bill,array('id' => $id))->row();
+        if($data == null){
+            return "订单已经不存在";
+        }
+        if($data -> member_id != $loginer_id){
+            return "无权查看";
+        }
+        return $data;
     }
 
 
@@ -457,6 +464,7 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
     //原始资产转为可售资产
     public function origin_2_totrade_res($loginer_id, $amount)
     {
+
         $res = $this -> getBillOutline($loginer_id);
         //判断原始资产是否足够
         if($res == null){
@@ -479,8 +487,8 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
     /*** 处理获取个人资产汇总相关数据 **/
 
     //获取各项资产汇总 
-    public function getBillOutline($id){
-        return $this->db->get_where($this->tbl_member_resouce,array('id' => $id))->row();
+    public function getBillOutline($member_id){
+        return $this->db->get_where($this->tbl_member_resouce,array('member_id' => $member_id))->row();
     }
 
     //增加冻结资产
