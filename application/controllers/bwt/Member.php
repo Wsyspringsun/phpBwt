@@ -402,7 +402,6 @@ class Member extends CI_Controller
 	/**
      * @title 认证接口
      * @desc  (认证接口)
-     * @input {"name":"id","require":"true","type":"int","desc":"用户id"}
      * @input {"name":"id_photo_positive","require":"true","type":"string","desc":"身份证正面图片"}
      * @input {"name":"id_photo_reverse","require":"true","type":"string","desc":"身份证反面图片"}
      * @input {"name":"id_photo_unity","require":"true","type":"string","desc":"身份证人像图片"}
@@ -430,6 +429,13 @@ class Member extends CI_Controller
             $params[$k] = trim($this -> input -> post($k));
         }   */   		
 		//模拟数据
+		
+		
+		
+		
+		
+		
+		$appkey='342007b36d37150df7de516a5183b127';
         $params['id'] = 13;
         $params['alipay_id'] = '17681878141';
         $params['id_photo_positive'] = 'http://bwt.glq.cc/upload/201901072108473379.jpg';
@@ -442,6 +448,12 @@ class Member extends CI_Controller
         $params['yzm'] = '6666';
 		$this->session->set_tempdata('yzm',$params['yzm'],60);
 		//模拟数据
+		
+		
+		
+		'https://way.jd.com/jisuapi/qrcodeRead?qrcode='..'&appkey=342007b36d37150df7de516a5183b127';
+		
+		
 		$id = $params['id'];
 		$mobile = $this->member_model->getwhereRow(['id' => $id],'mobile')['mobile'];
 		if($params['mobile']!=$mobile){
