@@ -33,7 +33,9 @@ class Member extends CI_Controller
         $pwd_again = trim($this->input->post('pwd_again'));
         $pwd_second = trim($this->input->post('pwd_second'));
         $pwd_second_again = trim($this->input->post('pwd_second_again'));
-        $referee_mobile = trim($this->input->post('referee_mobile'));		 
+        $referee_mobile = trim($this->input->post('referee_mobile'));	
+		$paw_str=strlen($pwd);
+		$pwd_second_str=strlen($pwd_second);
         if (!$yzm) {
             show300('验证码不能为空');
         }
