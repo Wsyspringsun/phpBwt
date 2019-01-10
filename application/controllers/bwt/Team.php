@@ -24,14 +24,12 @@ class Team extends CI_Controller
      * @output {"name":"data.real_name","require":"true","type":"int","desc":"用户名字"}
      */
 	public function myTeam(){
-		 $id = $this->session->tempdata('id');
+		 		
+		$id=$this->getId();
 		 $page=empty($this->input->post('page'))?1:($this->input->post('page'));//页数
 		 //$page=2;
 		 $offset=$this->getPage($page,TEANLIMIT);//偏移量
-		 $id=1;
-		 if (empty($id)) {
-				show300('会员id不能为空');
-			}
+	
 		$data=$this->member_model->getTeam(TEANLIMIT,$offset,$id);
 		if(!empty($data)){
 				foreach($data as $k => $v){
@@ -78,14 +76,16 @@ class Team extends CI_Controller
      */
 	
 	public function seeTeam(){
-		 $id = trim($this->input->post('mobile'));
+		 $this->getId();
+		 $id = trim($this->input->post('id'));
+		  if (empty($id)) {
+				show300('会员id不能为空');
+			}
 		 $page=empty($this->input->post('page'))?1:($this->input->post('page'));//页数
 		 //$page=2;
 		 $offset=$this->getPage($page,TEANLIMIT);//偏移量
 		 //$id=2;
-		 if (empty($id)) {
-				show300('会员id不能为空');
-			}
+		
 		$data=$this->member_model->getTeam(TEANLIMIT,$offset,$id);
 		if(!empty($data)){
 				foreach($data as $k => $v){
