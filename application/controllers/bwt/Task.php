@@ -80,15 +80,19 @@ class Task extends CI_Controller
         $yestoday=date("Y-m-d",strtotime("-1 day "));//获取昨天的日期
         $data=[];
         $where=[
-            'is_valid'=>0,//认证过的
-            'where_date'=> $yestoday
+            'is_valid'=>1,//认证过的
+            //'where_date'=> $yestoday
         ];
-        $data=$this->member_model->getMemberList($where,$dbArray=[],$where_in=[],3);
+        $data=$this->member_model->getMemberList($where,$dbArray=[],$where_in=[],1);
         if($data){
             foreach ($data as $val){
-                //获取当前id的所有子集
-                //getChild($val['id'])
-                print_r($val);exit;
+                //获取当前id的所有网体
+                $childs=$this->member_model->getChild($val['id'],$val['member_lvl']);
+                $member_ids=explode(',',$childs);
+                array_shift($member_ids);
+                print_r($member_ids);
+                exit;
+
             }
         }
 

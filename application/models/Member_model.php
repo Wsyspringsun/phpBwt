@@ -146,7 +146,7 @@ class Member_model extends MY_Model
         $ids = $id;
         if (!empty($res)) {
             foreach ($res as $key => $val) {
-                $ids .= "," . $this->getChild($val['id']);
+                $ids .= "," . $this->getChild($val['id'],$member_lvl);
             }
         }
         return $ids;
