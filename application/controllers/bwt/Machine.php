@@ -53,6 +53,7 @@ class Machine extends CI_Controller
 	 */
     public function machineDetail()
     {
+		$this->getId();
 		$id=trim($this->input->post('id'));
 		//$id=1;
 		if(!$id){
