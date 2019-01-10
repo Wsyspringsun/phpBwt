@@ -217,9 +217,11 @@ class Bill_model extends MY_Model
 
     //卖给确定的买单
     public function sale2BuyBillOriginRes($params){
+        $sale_member_id = $params['sale_member_id'];
+        $buy_id = $params['buy_id'];
+
         $this->db->trans_start();
         //买单
-        $buy_id = $params['buy_id'];
         $buy_bill = $this -> db -> get_where($this -> tbl_origin_res_buy_bill,array('id' => $buy_id)) -> row();
         if($buy_bill === null){
             return "买入单不存在";
@@ -236,7 +238,6 @@ class Bill_model extends MY_Model
         
         $stat = '0-0' ;
         //创建卖单
-        $sale_member_id = $params['sale_member_id'];
 
         //TODO:运营ID卖出的额度限制:动态额度->前一日的总销量决定次日动态额度，金泰额度->一个不变数值,账户内可交易额度
         $member_res = $this -> getBillOutline($sale_member_id);
