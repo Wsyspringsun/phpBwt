@@ -76,121 +76,125 @@ class Audit extends CI_Controller
         if (!$id) {
             show300('会员id不能为空');
         }
-        $ids = $this->member_model->getSup($id, $n = 0);
-        $ids = explode(',', $ids);
-        $where['is_valid'] = 1;
-        $where_in = [
-            'field' => 'id',
-            'data' => $ids
-        ];
-        $data = $this->member_model->getWhere($where, $select = '*', $dbArray = [], $where_in);
+        //执行两次
+        for($i=0;$i<=1;$i++){
+            $ids = $this->member_model->getSup($id, $n = 0);
+            $ids = explode(',', $ids);
+            $where['is_valid'] = 1;
+            $where_in = [
+                'field' => 'id',
+                'data' => $ids
+            ];
+            $data = $this->member_model->getWhere($where, $select = '*', $dbArray = [], $where_in);
 
-        if (!empty($data)) {
-            foreach ($data as $val) {
+            if (!empty($data)) {
+                foreach ($data as $val) {
 
-                $pwhere=[
-                    'referee_id'=>$val['id'],
-                    'is_valid' => 1,
+                    $pwhere=[
+                        'referee_id'=>$val['id'],
+                        'is_valid' => 1,
 
-                ];
-                $temp=$this->member_model->getWhere($pwhere,$select='id',$dbArray=[],$where_in=[]);
-                $result=[];//获取直推id
-                if($temp){
-                    foreach ($temp as $val1){
+                    ];
+                    $temp=$this->member_model->getWhere($pwhere,$select='id',$dbArray=[],$where_in=[]);
+                    $result=[];//获取直推id
+                    if($temp){
+                        foreach ($temp as $val1){
 
-                        array_push($result,$val1['id']);
+                            array_push($result,$val1['id']);
+                        }
                     }
+
+
+                    switch ($val['member_lvl']) {
+                        case "2":
+                            $num = 3;
+                            $cWhere = [
+                                'is_valid' => 1,
+                                'member_lvl' =>1
+                            ];
+                            break;
+                        case "3":
+                            $cWhere = [
+                                'is_valid' => 1,
+                                'member_lvl' =>2
+                            ];
+                            $num = 3;
+                            break;
+                        case "4":
+                            $cWhere = [
+                                'is_valid' => 1,
+                                'member_lvl' =>3
+                            ];
+
+                            $num = 3;
+                            break;
+                        case "5":
+                            $cWhere = [
+                                'is_valid' => 1,
+                                'member_lvl' =>4
+                            ];
+                            $num = 3;
+                            break;
+                        case "6":
+                            $cWhere = [
+                                'is_valid' => 1,
+                                'member_lvl' =>5
+                            ];
+                            $num = 3;
+                            break;
+                        case "7":
+                            $cWhere = [
+                                'is_valid' => 1,
+                                'member_lvl' =>6
+
+                            ];
+                            $num = 3;
+                            break;
+                        case "8":
+                            $cWhere = [
+                                'is_valid' => 1,
+                                'member_lvl' =>7
+                            ];
+                            $num = 3;
+
+                            break;
+
+                        default:
+                            $cWhere = [
+                                'is_valid' => 1,
+                                'referee_id' => $val['id'],
+                                'member_lvl' => 1
+
+                            ];
+                            $num = 9;
+                    }
+
+                    $cWhere_in = [
+                        'field' => 'referee_id',
+                        'data' => $result
+                    ];
+
+
+                    if($val['member_lvl']==1){
+                        $count = $this->member_model->getWhere_num($cWhere);//0级升一级，9个直推
+                    }else{
+                        //除一级以外的升级
+                        $count =$this->member_model->getRefereeNum($cWhere,$dbArray=[],$cWhere_in,$groupBy='referee_id');
+
+                    }
+
+
+                    //升级
+                    if ($count >= $num) {
+                        $update['member_lvl'] = $val['member_lvl'] + 1;
+                        $referee_id = $this->member_model->updateWhere(['id' => $val['id']], $update);
+
+                    }
+
                 }
-
-
-                switch ($val['member_lvl']) {
-                    case "2":
-                        $num = 3;
-                        $cWhere = [
-                            'is_valid' => 1,
-                            'member_lvl' =>1
-                        ];
-                        break;
-                    case "3":
-                        $cWhere = [
-                            'is_valid' => 1,
-                            'member_lvl' =>2
-                        ];
-                        $num = 3;
-                        break;
-                    case "4":
-                        $cWhere = [
-                            'is_valid' => 1,
-                            'member_lvl' =>3
-                        ];
-
-                        $num = 3;
-                        break;
-                    case "5":
-                        $cWhere = [
-                            'is_valid' => 1,
-                            'member_lvl' =>4
-                        ];
-                        $num = 3;
-                        break;
-                    case "6":
-                        $cWhere = [
-                            'is_valid' => 1,
-                            'member_lvl' =>5
-                        ];
-                        $num = 3;
-                        break;
-                    case "7":
-                        $cWhere = [
-                            'is_valid' => 1,
-                            'member_lvl' =>6
-
-                        ];
-                        $num = 3;
-                        break;
-                    case "8":
-                        $cWhere = [
-                            'is_valid' => 1,
-                            'member_lvl' =>7
-                        ];
-                        $num = 3;
-
-                        break;
-
-                    default:
-                        $cWhere = [
-                            'is_valid' => 1,
-                            'referee_id' => $val['id'],
-                            'member_lvl' => 1
-
-                        ];
-                        $num = 9;
-                }
-
-                $cWhere_in = [
-                    'field' => 'referee_id',
-                    'data' => $result
-                ];
-
-
-				if($val['member_lvl']==1){
-                    $count = $this->member_model->getWhere_num($cWhere);//0级升一级，9个直推
-                }else{
-				    //除一级以外的升级
-                    $count =$this->member_model->getRefereeNum($cWhere,$dbArray=[],$cWhere_in,$groupBy='referee_id');
-
-                }
-
-
-                //升级
-                if ($count >= $num) {
-                    $update['member_lvl'] = $val['member_lvl'] + 1;
-                    $referee_id = $this->member_model->updateWhere(['id' => $val['id']], $update);
-
-                }
-
             }
         }
+
 
         return true;
     }

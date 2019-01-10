@@ -126,11 +126,23 @@ class Member_model extends MY_Model
     /*
      * 获取所有下级
      * @param $id String 待查找的id
+     * @param $member_lvl 等级不为空表示烧伤，
      * @return String | NULL 失败返回null
      */
-    public function getChild($id)
+    public function getChild($id,$member_lvl='')
     {
-        $res = $this->db->select('id')->get_where($this->table, ['referee_id' => $id])->result_array();
+        if($member_lvl){
+            //计算网体收益需要排除等级比自己高的
+            $where=[
+                'referee_id' => $id,
+                'member_lvl <='=>$member_lvl
+            ];
+        }else{
+            $where=[
+                'referee_id' => $id
+            ];
+        }
+        $res = $this->db->select('id')->get_where($this->table, $where)->result_array();
         $ids = $id;
         if (!empty($res)) {
             foreach ($res as $key => $val) {
@@ -155,6 +167,25 @@ class Member_model extends MY_Model
         }
 
         return $this->db->get($this->table)->num_rows();
+    }
+
+    //获取会员列表
+    public function getMemberList($where,$dbArray=[],$where_in=[],$limit=2){
+        $res=[];
+        $this->db->from($this->table);
+        $this->db->where($where);
+
+        if($where_in){
+            if(isset($where_in['field'])&&isset($where_in['data'])){
+                $this->db->where_in($where_in['field'],$where_in['data']);
+            }else{
+                echo 'where_in参数输入不正确';exit();
+            }
+        }
+        $this->db->limit($limit);
+
+        return $this->db->get()->result_array();
+
     }
 
 

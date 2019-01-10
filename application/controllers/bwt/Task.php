@@ -75,5 +75,26 @@ class Task extends CI_Controller
         echo "定时任务执行停止..".date("Y-m-d H:i:s",time());
     }
 
+
+    public function yesterday_profit(){
+        $yestoday=date("Y-m-d",strtotime("-1 day "));//获取昨天的日期
+        $data=[];
+        $where=[
+            'is_valid'=>0,//认证过的
+            'where_date'=> $yestoday
+        ];
+        $data=$this->member_model->getMemberList($where,$dbArray=[],$where_in=[],3);
+        if($data){
+            foreach ($data as $val){
+                //获取当前id的所有子集
+                //getChild($val['id'])
+                print_r($val);exit;
+            }
+        }
+
+
+    }
+
+
 }
 
