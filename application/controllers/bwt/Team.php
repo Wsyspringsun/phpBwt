@@ -35,7 +35,7 @@ class Team extends CI_Controller
 		if(!empty($data)){
 				foreach($data as $k => $v){
 					$data[$k]['mobile']=substr_replace($v['mobile'],'****',3,4);
-					$data[$k]['real_name']="**".substr($v['real_name'], -1);
+					$data[$k]['real_name']="**".mb_substr($v['real_name'], -1);
 				  $data[$k]['dirCount']=$this->member_model->getTeamCount($v['id']);//直推人数
 				  $ids=$this->member_model->getChild($v['id']);
 				  if(!empty($ids)){
