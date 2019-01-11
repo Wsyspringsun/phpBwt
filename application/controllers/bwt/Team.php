@@ -25,7 +25,8 @@ class Team extends CI_Controller
      */
 	public function myTeam(){
 		 		
-		$id=$this->getId();
+		//$id=$this->getId();
+		$id=1;
 		 $page=empty($this->input->post('page'))?1:($this->input->post('page'));//页数
 		 //$page=2;
 		 $offset=$this->getPage($page,TEANLIMIT);//偏移量
@@ -34,6 +35,7 @@ class Team extends CI_Controller
 		if(!empty($data)){
 				foreach($data as $k => $v){
 					$data[$k]['mobile']=substr_replace($v['mobile'],'****',3,4);
+					$data[$k]['real_name']="**".substr($v['real_name'], -1);
 				  $data[$k]['dirCount']=$this->member_model->getTeamCount($v['id']);//直推人数
 				  $ids=$this->member_model->getChild($v['id']);
 				  if(!empty($ids)){
@@ -90,6 +92,7 @@ class Team extends CI_Controller
 		if(!empty($data)){
 				foreach($data as $k => $v){
 				  $data[$k]['mobile']=substr_replace($v['mobile'],'****',3,4);
+				  $data[$k]['real_name']="**".substr($v['real_name'], -1);
 				  $data[$k]['dirCount']=$this->member_model->getTeamCount($v['id']);//直推人数
 				  $ids=$this->member_model->getChild($v['id']);
 				  if(!empty($ids)){
