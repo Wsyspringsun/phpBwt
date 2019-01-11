@@ -365,7 +365,13 @@ class Bill extends CI_Controller
             }
             $params[$k] = $this -> input -> post($k);
         }
-        $data = $this -> bill_model -> payed4BillOriginRes($params);
+        //获取登录用户，没有登录用户则推出
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
+
+        $data = $this -> bill_model -> payed4BillOriginRes($loginer_id, $params);
         if($data > 0 ){
             show200($data);
         }else{
@@ -405,6 +411,25 @@ class Bill extends CI_Controller
         }
 
     }
+
+    /**
+    * @title 交易大厅买单列表
+    * @desc  获取原始资源交易单买入列表
+    * @input {"name":"page","require":"true","type":"int","desc":"页码"}
+    **/
+    public function all_buy_bill_origin_res_list()
+    {
+        $page = $this->input->post('page') == null ? 1 : $this->input->post('page');
+        $offset = $this -> getPage($page,PAGESIZE) ;
+        $data = $this -> bill_model -> all_buy_bill_origin_res_list($offset );
+        if(is_string($data)){
+            show300($data);
+        }else{
+            show200($data);
+        }
+
+    }
+
 
     /**
     * @title 获取原始资源交易单买入列表
@@ -561,7 +586,19 @@ class Bill extends CI_Controller
     **/
     public function machine_prod_2_origin_res()
     {
-        //TODO:判断和上次领取间隔时间24小时
+        //模拟矿机产出
+        //$this -> bill_model -> machineProduct();
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
+        $data = $this -> bill_model -> machine_prod_2_origin_res($loginer_id);
+        if(is_string($data)){
+            show300($data);
+        }else{
+            show200($data);
+        }
+
     }
 
 
@@ -582,7 +619,6 @@ class Bill extends CI_Controller
         if($loginer_id == null){
             show300("请先登录");
         }
-        //TODO:判断和上次领取间隔时间24小时
         //释放可售资产为可交易资产
         $data = $this -> bill_model -> releaseTradeableRes($loginer_id);
         if(is_string($data)){
