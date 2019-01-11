@@ -8,7 +8,7 @@ class Member extends CI_Controller
     {
         parent::__construct();
         $this->load->library(array('sms/api_demo/SmsDemo', 'weixin/wechatCallbackapiTest'));
-        $this->load->model(array('member_model', 'machine_model', 'member_resouce_model'));
+        $this->load->model(array('member_model', 'machine_model', 'member_resouce_model','member_pay_record_model','admin_receive_model','member_audit_model'));
     }
 
     /**
@@ -131,6 +131,8 @@ class Member extends CI_Controller
     public function getMyInfo()
     {
         $id=$this->getId();
+        $id=1;
+		$this->getValid($id);
 		$data = $this->member_model->getwhererow(['id' => $id], 'id,real_name,head_icon,member_lvl');
 		$data['member_lvl']=$this->member_model->getLevel($data['member_lvl']);
         show200($data);
@@ -386,7 +388,8 @@ class Member extends CI_Controller
      */
     public function getMemberInfo()
     {
-		$id=$this->getId();
+		//$id=$this->getId();
+		$id=1;;
         $data = $this->member_model->getwhereRow(['id' => $id], '*');
         if (!empty($data)) {
 			$data['pwd']='******';
@@ -539,7 +542,44 @@ class Member extends CI_Controller
 				show300('验证码错误');				
 			}    
     }
-
+	/**
+     * @title 判断认证的阶段
+     * @desc  (判断用户认证走到了哪一步 )
+     * @output {"name":"code","type":"int","desc":"300:信息说明"}
+     * @output {"name":"msg","type":"string","desc":"信息说明"}
+     * @output {"name":"data.tag","type":"int","desc":"1认证页面2缴费页面3上传截图4审核页面"}
+     */
+	public function getValid(){
+		//$id=$this->getId();
+		$id=1;
+		$res_pay=$this->member_model->getwhererow(['id'=>$id],'china_id,is_pay');
+		if(empty($res_pay['china_id'])){
+			$data['tag']=1;
+			show200($data,'认证页面  认证接口');
+		}else if($res_pay['is_pay']==0){
+			$data['tag']=2;
+			show200($data,'掉缴费页面  确认完成缴费接口');
+		
+	}
+	
+	/**
+     * @title 判断认证的阶段
+     * @desc  (判断用户认证走到了哪一步 )
+     * @output {"name":"code","type":"int","desc":"999:您还未认证,请前去认证"}
+     * @output {"name":"msg","type":"string","desc":"信息说明"}
+     */
+	public function getAudit(){
+		$id=$this->getId();
+		$res_audit=$this->member_audit_model->getwhererow(['id'=>$id],'status,id');
+		if($res_audit['status']==2){
+			sho300('审核中');
+		}else if($res_audit['status']==1){
+			sho300('审核不通过');
+		}else{
+			sho300('审核通过');
+		}
+	}
+	
     //升级会员等级判断
     public function updateLevel($id=19)
     {
