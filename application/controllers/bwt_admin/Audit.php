@@ -46,18 +46,29 @@ class Audit extends CI_Controller
      */
 	public function audiRsult(){
 		
-		print_r(654);exit;
-		 $id = 1;
-		 $audit_id=1;
+		//print_r(654);exit;
+			 $id = 1;
+			 $audit_id=1;
 		 
 			 $audit['status']=1;
 			 $audit['operation_id']='1';
 			 $audit['operation_name']='小果子';
 			 $audit['user_id']=$id;
-			 $res=$this->member_audit_model->updateWhere(['id'=>$audit_id,'user_id'=>$id]);
+			 $res=$this->member_audit_model->updateWhere(['id'=>$audit_id,'user_id'=>$id],$audit);
+			 echo "<pre>";
+			 var_dump($res);exit;
+			 echo "----";
 		 if($res){
+			$mem['is_valid']=1;
+			$valid= $this->member_model->updateWhere(['id'=>$id],$mem);
+			echo "<pre>";
+			 var_dump($valid);exit;
+			 echo "----";
 			$leve= $this->updateLevel($id);
-			if($leve){
+			echo "<pre>";
+			 var_dump($leve);exit;
+			 echo "----";
+			if($leve&&$valid){
 				show200('审核成功');
 			}else{
 				show300('升级成功');
@@ -66,12 +77,57 @@ class Audit extends CI_Controller
 			 show300('审核失败');
 		 }
 	}
-	
+	 public function updateLevel22()
+    {
+        //print_r($id);exit;
+		$id=10;
+        if (!$id) {
+            show300('会员id不能为空');
+        }
+        $ids = $this->member_model->getSup($id, $n = 0);
+        $ids = explode(',', $ids);
+        $where['is_valid'] = 1;
+        $where_in = [
+            'field' => 'id',
+            'data' => $ids
+        ];
+        $data = $this->member_model->getWhere($where, $select = '*', $dbArray = [], $where_in);
+        if (!empty($data)) {
+            foreach ($data as $val) {
+                switch ($val['member_lvl']) {
+                    case "1":
+                        $num = 9;
+                        break;
+                    default:
+                        $num = 3;
+                }
+                $cWhere = [
+                    'is_valid' => 1,
+                    'referee_id' => $val['id'],
+                    'member_lvl' => $val['member_lvl']
+
+                ];
+				//print_r($cWhere);exit;
+
+                $count = $this->member_model->getWhere_num($cWhere);
+                //升级
+                if ($count >= $num) {
+                    $update['member_lvl'] = $val['member_lvl'] + 1;
+                    $referee_id = $this->member_model->updateWhere(['id' => $val['id']], $update);
+
+                }
+
+            }
+        }
+
+        return true;
+    }
 	
 //升级会员等级判断
     public function updateLevel($id)
     {
        // print_r($id);exit;
+	   //$id=22;
         if (!$id) {
             show300('会员id不能为空');
         }
@@ -195,7 +251,7 @@ class Audit extends CI_Controller
         }
 
 
-        return true;
+       echo  true;
     }
     
 }
