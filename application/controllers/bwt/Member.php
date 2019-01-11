@@ -571,23 +571,6 @@ class Member extends CI_Controller
 		}
 	}
 	
-	/**
-     * @title 判断认证的阶段
-     * @desc  (判断用户认证走到了哪一步 )
-     * @output {"name":"code","type":"int","desc":"999:您还未认证,请前去认证"}
-     * @output {"name":"msg","type":"string","desc":"信息说明"}
-     */
-	public function getAudit(){
-		$id=$this->getId();
-		$res_audit=$this->member_audit_model->getwhererow(['id'=>$id],'status,id');
-		if($res_audit['status']==2){
-			sho300('审核中');
-		}else if($res_audit['status']==1){
-			sho300('审核不通过');
-		}else{
-			sho300('审核通过');
-		}
-	}
 	
     //升级会员等级判断
     public function updateLevel($id=19)
