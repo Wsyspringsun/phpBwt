@@ -559,7 +559,16 @@ class Member extends CI_Controller
 		}else if($res_pay['is_pay']==0){
 			$data['tag']=2;
 			show200($data,'掉缴费页面  确认完成缴费接口');
-		
+		}else{
+			$res_jt=$this->member_pay_record_model->getwhererow(['user_id'=>$id],'id');
+			if(empty($res_jt)){
+				$data['tag']=3;
+				show200($data,'掉上传截图页面 上传截图接口 ');
+			}else{
+				$data['tag']=4;
+				show200($data,'掉等待页');
+			}
+		}
 	}
 	
 	/**
