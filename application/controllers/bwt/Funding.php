@@ -60,12 +60,36 @@ class Funding extends CI_Controller
         if($member["is_valid"] != "1" ){
             show300("必须认证用户可以交易,请尽快认证");
         }
-        $bill = $this->bill_model -> getBuyFundingBill($loginer_id);
+        $bill = $this->bill_model -> getCurrentBuyFundingBill($loginer_id);
         if($bill != null){
             $bill -> usdt_code =  $rec -> usdt_code;
         }
         show200($bill);
 
+    }
+
+    /**
+    * @title 获取兑换的数量
+    * @desc  获取兑换的数量
+    * @output {"name":"msg","type":"string","desc":"信息说明"}
+    * @output {"name":"data","type":"string","desc":"可兑换USDT数值范围,usdt_min:最小,usdt_max:最大"}
+    **/
+    public function get_usdt_amount_span(){
+        //判断交易时间
+        $rec = $this -> valid_fund_time();
+        $span = array(
+            "usdt_min" => $rec -> usdt_min,
+            "usdt_max" => $rec -> usdt_max,
+        );
+        $member_res = $this -> bill_model -> getBillOutline($rec -> sale_member_id);
+        //获取冻结的资产
+        $foren_amount = $this -> bill_model -> getForenOriginAmountByFunding($rec -> sale_member_id);
+        $enable_origin_amount = $member_res -> origin_amount - $foren_amount;
+        if($enable_origin_amount < 2000){
+            $max_usdt_amount = (int)($enable_origin_amount / $rec -> exchange_percent);
+            $span["usdt_max"] = $max_usdt_amount;
+        }  
+        show200($span);
     }
 
     /**
@@ -100,7 +124,7 @@ class Funding extends CI_Controller
             show300("身份证号错误");
         }
 
-        $current_bill = $this->bill_model -> getBuyFundingBill($loginer_id);
+        $current_bill = $this->bill_model -> getCurrentBuyFundingBill($loginer_id);
         if($current_bill != null){
             show300("存在未完成的订单");
         }
@@ -116,6 +140,9 @@ class Funding extends CI_Controller
         $dtsc_amount = $usdt_amount * $rec -> exchange_percent;
 
         $member_res = $this -> bill_model -> getBillOutline($rec -> sale_member_id);
+        if($member_res == null){
+            show300("缺少会员资产信息");
+        }
         //获取冻结的资产
         $foren_amount = $this -> bill_model -> getForenOriginAmountByFunding($rec -> sale_member_id);
         $enable_origin_amount = $member_res -> origin_amount - $foren_amount;
@@ -153,32 +180,83 @@ echo 'newId:'.$data;
     /**
     * @title 取消兑换下单
     * @desc  取消兑换下单
-    * @input {"name":"pwd_second","require":"true","type":"string","desc":"买家会员二级密码"}	
-    * @output {"name":"msg","type":"string","desc":"信息说明"}
     **/
     public function cancel_exchange(){
+        $this -> valid_fund_time();
+        //获取登录用户，没有登录用户则推出
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
+        $id = $this -> input -> post("id");
+        if($id == null){
+            show300("缺少订单id");
+        }
+
+        $this -> bill_model -> update_funding_bill($loginer_id, $id, "X");
+
     }
 
 
     /**
     * @title 买家完成转账后点完成付款
     * @desc  买家完成转账后点完成付款
+    * @input {"name":"id","require":"true","type":"string","desc":"订单id"}	
+    * @output {"name":"msg","type":"string","desc":"信息说明"}
+    * @output {"name":"data","type":"string","desc":"订单信息"}
     **/
     public function confirm_usdt_payed()
     {
         $this -> valid_fund_time();
+        //获取登录用户，没有登录用户则推出
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
+        $id = $this -> input -> post("id");
+        if($id == null){
+            show300("缺少订单id");
+        }
+
+        $data = $this -> bill_model -> update_funding_bill($loginer_id, $id, "1");
+        if(is_string($data) ){
+            show300($data);
+        }else{
+            show200($this -> bill_model -> getFundingBillById($id));
+        }
+
     }
     
     /**
     * @title 买家确认收到了Dtsc原始资产
     * @desc  买家确认收到了Dtsc原始资产
+    * @input {"name":"id","require":"true","type":"string","desc":"订单id"}	
+    * @output {"name":"msg","type":"string","desc":"信息说明"}
+    * @output {"name":"data","type":"string","desc":"订单信息"}
     **/
     public function confirm_dtsc_arrive()
     {
         $this -> valid_fund_time();
+        //获取登录用户，没有登录用户则推出
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
+        $id = $this -> input -> post("id");
+        if($id == null){
+            show300("缺少订单id");
+        }
+
+        $data = $this -> bill_model -> update_funding_bill($loginer_id, $id, "S");
+        if(is_string($data) ){
+            show300($data);
+        }else{
+            show200($this -> bill_model -> getFundingBillById($id));
+        }
+
     }
 
-    /** 接受私募的会员商操作区域 End **/
+    /** 接受私募的会员操作区域 End **/
 
 
     /** 运营商操作区域 **/
@@ -186,28 +264,54 @@ echo 'newId:'.$data;
     /**
     * @title 卖家确认收到付款后放币
     * @desc  卖家确认收到付款后放币
+    * @input {"name":"id","require":"true","type":"string","desc":"订单id"}	
+    * @output {"name":"msg","type":"string","desc":"信息说明"}
+    * @output {"name":"data","type":"string","desc":"true:操作成功"}
+
     **/
     public function confirm_usdt_arrive()
     {
         $this -> valid_fund_time();
+        //获取登录用户，没有登录用户则推出
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
+        $id = $this -> input -> post("id");
+        if($id == null){
+            show300("缺少订单id");
+        }
+
+        $data = $this -> bill_model -> update_funding_bill($loginer_id, $id, "2");
+        if(is_string($data) ){
+            show300($data);
+        }else{
+            show200(true);
+        }
+
     }
 
     /**
     * @title 运营商的私募交易单列表
     * @desc  运营商的私募交易单列表
+    * @input {"name":"page","require":"true","type":"int","desc":"页码，1开始"}	
     **/
     public function fund_bill_list()
     {
-        $this -> valid_fund_time();
-    }
+        //获取登录用户，没有登录用户则推出
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
 
-    /**
-    * @title 运营商的私募交易单详情
-    * @desc  运营商的私募交易单详情
-    **/
-    public function fund_bill_detail()
-    {
-        $this -> valid_fund_time();
+        $page = $this->input->post('page') == null ? 1 : $this->input->post('page');
+        $offset = $this -> getPage($page,PAGESIZE) ;
+        $data = $this -> bill_model -> getFundingBillList($loginer_id, $offset);
+        if(is_string($data)){
+            show300($data);
+        }else{
+            show200($data);
+        }
     }
 
     /** 运营商操作区域 End **/
