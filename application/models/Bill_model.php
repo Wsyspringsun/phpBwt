@@ -13,6 +13,8 @@ class Bill_model extends MY_Model
     private $tbl_key_val_params ='key_val_params';//各种参数数据对照表
     private $tbl_totrade_2_trade_bill ='totrade_2_trade_bill';//可售资产释放位可交易资产记录
     private $tbl_machineprod_2_origin_bill ='machineprod_2_origin_bill';//领取矿机产值转为原始资产
+    private $tbl_funding_rec = 'funding_rec';//私募活动记录
+    private $tbl_funding_bill = 'funding_bill';//私募交易单
 
 
     public function __construct()
@@ -26,7 +28,8 @@ class Bill_model extends MY_Model
         parent::__construct($this->tbl_key_val_params);
         parent::__construct($this->tbl_totrade_2_trade_bill);
         parent::__construct($this->tbl_machineprod_2_origin_bill);
-
+        parent::__construct($this->tbl_funding_rec);
+        parent::__construct($this->tbl_funding_bill);
 
 	$this->load->model(array('member_model'));		
     }
@@ -671,6 +674,33 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
     }
 
 
+    /** 接受私募的会员商操作区域 **/
+        
+    //获取私募剩余天数
+    public function getFundingRec(){
+        return $this -> db -> query("SELECT *, to_days(stop_date) - to_days(start_date) total_days , to_days(stop_date) - to_days(now()) cnt_days FROM ".$this -> tbl_funding_rec." where stop_date > start_date order by create_date desc limit 0,1; ") -> row();
+        
+    }
+
+    //买家获取私募订单
+    public function getBuyFundingBill($member_id){
+        return $this -> db -> query("SELECT `id`, `create_date`, `modify_date`, `dtsc_amount`, `usdt_amount`, `stat`, `funding_bill_no`, `pay_date`, `confirm_date`, `buy_member_id`, `sale_member_id`, `complete_date` FROM ".$this -> tbl_funding_bill." where stat != 'S' and stat != 'X'  limit 0,1; ") -> row();
+        
+    }
+
+    //处于冻结状态的运营商原始资产
+    public function getForenOriginAmountByFunding($member_id){
+        $row =  $this -> db -> query("SELECT  sum(`dtsc_amount`) forenAmount FROM ".$this -> tbl_funding_bill." where stat != 'S' and stat != 'X' and sale_member_id=".$this -> db -> escape($member_id)."  limit 0,1; ") -> row();
+        return $row -> forenAmount;
+    }
+
+    //保存兑换订单，申请转改
+    public function create_funding_bill($data){
+        $this -> db -> insert($this -> tbl_funding_bill, $data);
+        return $this -> db -> insert_id();
+    }
+
+    /** 接受私募的会员商操作区域 End**/
 
 }
 ?>

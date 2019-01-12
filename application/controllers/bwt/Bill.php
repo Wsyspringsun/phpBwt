@@ -668,6 +668,12 @@ class Bill extends CI_Controller
      * @output {"name":"data.tradeable_amount","require":"true","type":"float","desc":"可交易资产"}	
      * @output {"name":"data.machine_amount","require":"true","type":"float","desc":"有效矿机"}	
      * @output {"name":"data.profit_amount","require":"true","type":"float","desc":"总收益"}	
+     * @output {"name":"data.saleable_top","require":"true","type":"float","desc":"可动态出售额度"}	
+     * @output {"name":"data.profit_lastday","require":"true","type":"float","desc":"昨日网体收益"}	
+     * @output {"name":"data.tradeable_foren_amount","require":"true","type":"float","desc":"冻结的可交易资产"}	
+     * @output {"name":"data.traded_lastday","require":"true","type":"float","desc":"昨日网体买入"}	
+     * @output {"name":"data.","require":"true","type":"float","desc":""}	
+     * @output {"name":"data.","require":"true","type":"float","desc":""}	
      * @output {"name":"data.create_date","require":"true","type":"date","desc":"创建时间"}	
      * @output {"name":"data.modify_date","require":"true","type":"date","desc":"更新时间"}	
      **/
