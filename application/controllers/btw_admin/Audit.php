@@ -64,20 +64,19 @@ class Audit extends CI_Controller
 			 show300('审核失败');
 		 }
 	}
-	
-	
-	
-	
-	
+
+
+
+
 //升级会员等级判断
     public function updateLevel($id)
     {
-       // print_r($id);exit;
+        // print_r($id);exit;
         if (!$id) {
             show300('会员id不能为空');
         }
         //执行两次
-        for($i=0;$i<=1;$i++){
+        for ($i = 0; $i <= 1; $i++) {
             $ids = $this->member_model->getSup($id, $n = 0);
             $ids = explode(',', $ids);
             $where['1'] = 1;
@@ -89,41 +88,29 @@ class Audit extends CI_Controller
 
             if (!empty($data)) {
                 foreach ($data as $val) {
-
-                    $pwhere=[
-                        'referee_id'=>$val['id'],
-                        'is_valid' => 1,
-
-                    ];
-                    $temp=$this->member_model->getWhere($pwhere,$select='id',$dbArray=[],$where_in=[]);
-                    $result=[];//获取直推id
-                    if($temp){
-                        foreach ($temp as $val1){
-
-                            array_push($result,$val1['id']);
-                        }
-                    }
-
-
+                    //获取当前id的所有网体
+                    $childs = $this->member_model->getChild($val['id']);
+                    $result = explode(',', $childs);
+                    array_shift($result);
                     switch ($val['member_lvl']) {
                         case "2":
                             $num = 3;
                             $cWhere = [
                                 'is_valid' => 1,
-                                'member_lvl' =>2
+                                'member_lvl' => 2
                             ];
                             break;
                         case "3":
                             $cWhere = [
                                 'is_valid' => 1,
-                                'member_lvl' =>3
+                                'member_lvl' => 3
                             ];
                             $num = 3;
                             break;
                         case "4":
                             $cWhere = [
                                 'is_valid' => 1,
-                                'member_lvl' =>4
+                                'member_lvl' => 4
                             ];
 
                             $num = 3;
@@ -131,21 +118,21 @@ class Audit extends CI_Controller
                         case "5":
                             $cWhere = [
                                 'is_valid' => 1,
-                                'member_lvl' =>5
+                                'member_lvl' => 5
                             ];
                             $num = 3;
                             break;
                         case "6":
                             $cWhere = [
                                 'is_valid' => 1,
-                                'member_lvl' =>6
+                                'member_lvl' => 6
                             ];
                             $num = 3;
                             break;
                         case "7":
                             $cWhere = [
                                 'is_valid' => 1,
-                                'member_lvl' =>7
+                                'member_lvl' => 7
 
                             ];
                             $num = 3;
@@ -163,19 +150,16 @@ class Audit extends CI_Controller
                     }
 
                     $cWhere_in = [
-                        'field' => 'referee_id',
+                        'field' => 'id',
                         'data' => $result
                     ];
 
-
-                    if($val['member_lvl']==1){
+                    if ($val['member_lvl'] == 1) {
                         $count = $this->member_model->getWhere_num($cWhere);//0级升一级，9个直推
-                    }else{
+                    } else {
                         //除一级以外的升级
-                        $count =$this->member_model->getRefereeNum($cWhere,$dbArray=[],$cWhere_in,$groupBy='referee_id');
-
+                        $count = $this->member_model->getWhere_num($cWhere, $dbArray = [], $cWhere_in, $groupBy = 'referee_id');
                     }
-
 
                     //升级
                     if ($count >= $num) {
