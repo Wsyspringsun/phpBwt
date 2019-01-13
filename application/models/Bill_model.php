@@ -583,8 +583,7 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
         $dict = $this -> db -> get_where($this -> tbl_key_val_params, ["params_type" => $type, "params_key" => $key]) -> row_array();
         return $dict;
     }
-    //获取网体买入的成交量select_sum
-    //获取数据条数
+    //获取网体买入的成交量
     public function getBuyAmountSum($where,$dbArray=[],$where_in=[]){
         $this->db->where($where);
         $this->db->select_sum('amount');
