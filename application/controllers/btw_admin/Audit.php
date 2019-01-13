@@ -110,20 +110,20 @@ class Audit extends CI_Controller
                             $num = 3;
                             $cWhere = [
                                 'is_valid' => 1,
-                                'member_lvl' =>1
+                                'member_lvl' =>2
                             ];
                             break;
                         case "3":
                             $cWhere = [
                                 'is_valid' => 1,
-                                'member_lvl' =>2
+                                'member_lvl' =>3
                             ];
                             $num = 3;
                             break;
                         case "4":
                             $cWhere = [
                                 'is_valid' => 1,
-                                'member_lvl' =>3
+                                'member_lvl' =>4
                             ];
 
                             $num = 3;
@@ -131,33 +131,26 @@ class Audit extends CI_Controller
                         case "5":
                             $cWhere = [
                                 'is_valid' => 1,
-                                'member_lvl' =>4
+                                'member_lvl' =>5
                             ];
                             $num = 3;
                             break;
                         case "6":
                             $cWhere = [
                                 'is_valid' => 1,
-                                'member_lvl' =>5
+                                'member_lvl' =>6
                             ];
                             $num = 3;
                             break;
                         case "7":
                             $cWhere = [
                                 'is_valid' => 1,
-                                'member_lvl' =>6
-
-                            ];
-                            $num = 3;
-                            break;
-                        case "8":
-                            $cWhere = [
-                                'is_valid' => 1,
                                 'member_lvl' =>7
+
                             ];
                             $num = 3;
-
                             break;
+                        
 
                         default:
                             $cWhere = [
