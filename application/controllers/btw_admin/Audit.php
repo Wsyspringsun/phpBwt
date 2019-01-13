@@ -155,7 +155,7 @@ class Audit extends CI_Controller
                     ];
 
                     if ($val['member_lvl'] == 1) {
-                        $count = $this->member_model->getWhere_num($cWhere);//0级升一级，9个直推
+                        $count = $this->member_model->getRefereeNum($cWhere,$dbArray=[],$where_in=[],$groupBy='referee_id');//0级升一级，9个直推
                     } else {
                         //除一级以外的升级
                         $count = $this->member_model->getWhere_num($cWhere, $dbArray = [], $cWhere_in, $groupBy = 'referee_id');
