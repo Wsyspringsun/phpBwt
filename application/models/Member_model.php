@@ -22,25 +22,45 @@ class Member_model extends MY_Model
         $result = $this->db->get()->result_array();
         return $result;
     }
-
+ /*
+  * 获取会员信息用户名最大值
+  */
     public function getMax($parm)
     {
         $this->db->select_max($parm);
+        $this->db->where('user_type',0);
         return $this->db->get($this->table)->row_array();
     }
-
+ /*
+  * 获取会员信息用户名最小值
+  */
     public function getMin($parm)
     {
         $this->db->select_min($parm);
+		$this->db->where('user_type',0);
         return $this->db->get($this->table)->row_array();
     }
-
+ /*
+  * 获取会员注册总人数
+  */
     public function gRefNum($id)
     {
         $this->db->from($this->table);
         $this->db->where('referee_id', $id);
         return $this->db->count_all_results();
     }
+	 /*
+  * 获取会员推荐人名称
+  */
+	 public function getDirName($id)
+    {
+       $this->db->from($this->table);
+		$this->db->select('mem.real_name');
+		$this->db->join('member as mem','mem.id=member.referee_id','left');
+		$this->db->where('member.id',$id);
+		return $this->db->get()->row_array();	
+    }
+	
  /*
   * 获取会员信息链表查等级
   * @param $id  会员id

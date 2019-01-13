@@ -55,19 +55,13 @@ class Audit extends CI_Controller
 			 $audit['operation_name']='小果子';
 			 $audit['user_id']=$id;
 			 $res=$this->member_audit_model->updateWhere(['id'=>$audit_id,'user_id'=>$id],$audit);
-			 echo "<pre>";
-			 var_dump($res);exit;
-			 echo "----";
+
 		 if($res){
 			$mem['is_valid']=1;
 			$valid= $this->member_model->updateWhere(['id'=>$id],$mem);
-			echo "<pre>";
-			 var_dump($valid);exit;
-			 echo "----";
+
 			$leve= $this->updateLevel($id);
-			echo "<pre>";
-			 var_dump($leve);exit;
-			 echo "----";
+
 			if($leve&&$valid){
 				show200('审核成功');
 			}else{
