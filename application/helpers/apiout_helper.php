@@ -52,15 +52,14 @@ function show401($msg='参数错误')
     exit();
 }
 //未登录
-function show3($msg='您还未登录,请先登录')
+function show888($msg='您还未登录,请先登录')
 {
-    $out['code']=3;
+    $out['code']=888;
     $out['msg']=$msg;
     $out['data']=[];
     echo json_encode($out);
     exit();
 }
-
 //后台用
 function show200_admin($data,$count,$msg='获取成功'){
     $out['code']=200;

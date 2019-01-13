@@ -4,6 +4,7 @@ if (!defined('BASEPATH'))
 define('DATE_TIME_FMT','Y-m-d H:i:s');
 class Bill_model extends MY_Model
 {
+    private $tbl_member = 'member'; //会员表
     private $tbl_member_resouce ='member_resouce'; //会员资产汇总
     private $tbl_member_machine_bill ='member_machine_bill'; //会员矿机租用表
     private $tbl_origin_res_bill ='origin_res_bill';//原始资产交易表
@@ -13,6 +14,8 @@ class Bill_model extends MY_Model
     private $tbl_key_val_params ='key_val_params';//各种参数数据对照表
     private $tbl_totrade_2_trade_bill ='totrade_2_trade_bill';//可售资产释放位可交易资产记录
     private $tbl_machineprod_2_origin_bill ='machineprod_2_origin_bill';//领取矿机产值转为原始资产
+    private $tbl_funding_rec = 'funding_rec';//私募活动记录
+    private $tbl_funding_bill = 'funding_bill';//私募交易单
 
 
     public function __construct()
@@ -26,6 +29,9 @@ class Bill_model extends MY_Model
         parent::__construct($this->tbl_key_val_params);
         parent::__construct($this->tbl_totrade_2_trade_bill);
         parent::__construct($this->tbl_machineprod_2_origin_bill);
+        parent::__construct($this->tbl_funding_rec);
+        parent::__construct($this->tbl_funding_bill);
+        parent::__construct($this->tbl_member);
 
 
 	$this->load->model(array('member_model'));		
@@ -670,6 +676,113 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
     }
 
 
+    /** 接受私募的会员商操作区域 **/
+        
+    //获取私募剩余天数
+    public function getFundingRec(){
+        return $this -> db -> query("SELECT *, to_days(stop_date) - to_days(start_date) total_days , to_days(stop_date) - to_days(now()) cnt_days FROM ".$this -> tbl_funding_rec." where stop_date > start_date order by create_date desc limit 0,1; ") -> row();
+        
+    }
+
+    //买家获取当前私募订单
+    public function getCurrentBuyFundingBill($member_id){
+        return $this -> db -> query("SELECT * FROM ".$this -> tbl_funding_bill." where stat != 'S' and stat != 'X' and buy_member_id=".$member_id." limit 0,1; ") -> row();
+        
+    }
+
+    //通过id获取订单
+    public function getFundingBillById($id){
+        return $this -> db -> get_where($this -> tbl_funding_bill, array("id" => $id)) -> row();
+    }
+
+
+
+    //运营商获取当前私募订单列表
+    public function getFundingBillList($member_id, $offset){
+        return $this -> db -> query("SELECT a.*, b.mobile buy_member_mobile ,b.user_name buy_member_username FROM bwt.funding_bill a, member b where a.buy_member_id = b.id and a.stat = '1' and a.sale_member_id = ".$member_id." order by create_date desc limit ".$offset.",".PAGESIZE.";") -> result();
+    }
+
+
+    //处于冻结状态的运营商原始资产
+    public function getForenOriginAmountByFunding($member_id){
+        $row =  $this -> db -> query("SELECT  sum(`dtsc_amount`) forenAmount FROM ".$this -> tbl_funding_bill." where stat = '0' or stat = '1' and sale_member_id=".$this -> db -> escape($member_id)."  limit 0,1; ") -> row();
+        return $row -> forenAmount;
+    }
+
+    //保存兑换订单
+    public function create_funding_bill($data){
+        $this -> db -> insert($this -> tbl_funding_bill, $data);
+        return $this -> db -> insert_id();
+    }
+
+    //更改订单状态
+    public function update_funding_bill($loginer_id, $id, $stat){
+        $bill = $this -> db -> get_where($this -> tbl_funding_bill, array("id" => $id)) -> row();
+        if($bill == null){
+            return "订单不存在";
+        }
+        $this->db->trans_start();
+        switch($stat){
+            case "1":
+                //买家完成支付
+                if($bill -> stat != "0"){
+                    return "不是申请状态订单,无法执行完成支付";
+                }
+                if($loginer_id != $bill -> buy_member_id){
+                    return "不是买家,无权操作订单";
+                }
+                $this -> db -> set("pay_date", date(DATE_TIME_FMT, time()));
+                break;
+            case "2":
+                //运营方确认收款并放币,增加买家原始资产，减少卖家原始资产
+                if($bill -> stat != "1"){
+                    return "不是已付款状态订单,无法执行支付确认";
+                }
+                if($loginer_id != $bill -> sale_member_id){
+                    return "不是运营商,无权操作订单";
+                }
+                //更新买家资产,增加原始资产
+                $buy_member_id = $bill -> buy_member_id;
+                $sql_update_buy = "update ".$this -> tbl_member_resouce." set origin_amount=origin_amount+".$bill -> dtsc_amount." where member_id=".$buy_member_id.";";
+//echo $sql_update_buy;
+                $this -> db -> query($sql_update_buy);
+                //更新运营商资产,减少原始资产
+                $sale_member_id = $bill -> sale_member_id;
+                $sql_update_sale = "update ".$this -> tbl_member_resouce." set origin_amount=origin_amount-".($bill -> dtsc_amount)." where member_id=".$sale_member_id.";";
+                $this -> db -> query($sql_update_sale);
+                $this -> db -> set("confirm_date", date(DATE_TIME_FMT, time()));
+                break;
+            case "S":
+                //买家确认收币
+                if($bill -> stat != "2"){
+                    return "不是卖家已确认状态订单,无法执行买家确认";
+                }
+                if($loginer_id != $bill -> buy_member_id){
+                    return "不是买家,无权操作订单";
+                }
+                $this -> db -> set("complete_date", date(DATE_TIME_FMT, time()));
+                break;
+            case "X":
+                //买家撤销订单，活动结束作废
+                break;
+            default:
+                break;
+        }
+        $this -> db -> set("stat", $stat);
+        $this -> db -> where("id", $id);
+        $this -> db -> update($this -> tbl_funding_bill);
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === FALSE)
+        {
+            return "事务执行失败";
+        }
+        return true;
+
+    }
+
+    /** 接受私募的会员商操作区域 End**/
 
 }
 ?>
