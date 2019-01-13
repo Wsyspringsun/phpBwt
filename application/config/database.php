@@ -70,7 +70,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 | The $query_builder variables lets you determine whether or not to load
 | the query builder class.
 */
-$active_group = 'bwt';
+$active_group = 'bangwei';
 $query_builder = TRUE;
 $db['bangwei'] = array(
 	'dsn'	=> '',
@@ -95,9 +95,9 @@ $db['bangwei'] = array(
 );
 $db['bwt'] = array(
 	'dsn'	=> '',
-	'hostname' => '127.0.0.1',
+	'hostname' => '192.168.0.104',
 	'username' => 'root',
-	'password' => 'root',
+	'password' => 'springsun',
 	'database' => 'bwt',
 	'dbdriver' => 'mysqli',
 	'dbprefix' => '',
