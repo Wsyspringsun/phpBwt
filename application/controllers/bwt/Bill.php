@@ -217,7 +217,7 @@ class Bill extends CI_Controller
      **/
     public function buy_bill_origin_res()
     {
-        $requires = array("pwd_second"=>"缺少会员密码","amount"=>"缺少购买数量","unit_price"=>"缺少购买单价");
+        $requires = array("pwd_second"=>"缺少二级密码","amount"=>"缺少购买数量","unit_price"=>"缺少购买单价");
         $params = array();
         foreach($requires as $k => $v)
         {
@@ -236,6 +236,8 @@ class Bill extends CI_Controller
         if($buy_member["is_valid"] != "1"){
             show300("只有认证用户可以下单，请尽快认证");
         }
+        //交易时间为(1,2级9:00-21:00)和(2级以上:14:00-21:00)
+        $this -> valid_trade_time($buy_member["member_lvl"]);
         //验证二级密码
         if($buy_member["pwd_second"] != $params["pwd_second"]){
             show300("二级密码错误");
@@ -286,14 +288,15 @@ class Bill extends CI_Controller
     * @title 针对某个买入订单进行卖出
     * @desc  点击买单，然后确认卖出后调用的接口
     * @input {"name":"buy_id","require":"true","type":"int","desc":"买入订单的id"}
-    * @input {"name":"sale_member_id","require":"true","type":"int","desc":"卖家会员id"}	
+    * @input {"name":"china_id","require":"true","type":"int","desc":"身份证id"}
+    * @input {"name":"pwd_second","require":"true","type":"int","desc":"二级密码"}
     * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
     * @output {"name":"msg","type":"string","desc":"信息说明"}
     * @output {"name":"data","type":"int","desc":"生成的订单id"}
     **/
     public function sale_2_buy_bill_origin_res()
     {
-        $requires = array("buy_id" => "缺少买入订单id","sale_member_id" => "缺少卖家会员id");
+        $requires = array("buy_id" => "缺少买入订单id");
         $params = array();
         foreach($requires as $k => $v)
         {
@@ -302,6 +305,28 @@ class Bill extends CI_Controller
             }
             $params[$k] = $this -> input -> post($k);
         }
+
+        //获取登录用户，没有登录用户则推出
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
+        $member = $this->member_model->getwhereRow(['id' => $loginer_id],'*');
+        //必须认证用户可以买入
+        if($member["is_valid"] != "1" ){
+            show300("必须认证用户可以交易,请尽快认证");
+        }
+        //判断交易时间
+        $this -> valid_trade_time($member["member_lvl"]);
+
+        if($member["pwd_second"] != $this->input->post("pwd_second") ){
+            show300("二级密码错误");
+        }
+        if($member["china_id"] != $this->input->post("china_id") ){
+            show300("身份证号错误");
+        }
+
+        $params["sale_member_id"] = $loginer_id;
         $data = $this -> bill_model -> sale2BuyBillOriginRes($params);
         if($data > 0){
             //TODO:给买家发送短信,使用自己号码测试     
@@ -340,7 +365,13 @@ class Bill extends CI_Controller
             }
             $params[$k] = $this -> input -> post($k);
         }
-        $data = $this -> bill_model -> payed4BillOriginRes($params);
+        //获取登录用户，没有登录用户则推出
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
+
+        $data = $this -> bill_model -> payed4BillOriginRes($loginer_id, $params);
         if($data > 0 ){
             show200($data);
         }else{
@@ -380,6 +411,25 @@ class Bill extends CI_Controller
         }
 
     }
+
+    /**
+    * @title 交易大厅买单列表
+    * @desc  获取原始资源交易单买入列表
+    * @input {"name":"page","require":"true","type":"int","desc":"页码"}
+    **/
+    public function all_buy_bill_origin_res_list()
+    {
+        $page = $this->input->post('page') == null ? 1 : $this->input->post('page');
+        $offset = $this -> getPage($page,PAGESIZE) ;
+        $data = $this -> bill_model -> all_buy_bill_origin_res_list($offset );
+        if(is_string($data)){
+            show300($data);
+        }else{
+            show200($data);
+        }
+
+    }
+
 
     /**
     * @title 获取原始资源交易单买入列表
@@ -529,6 +579,27 @@ class Bill extends CI_Controller
         }
     }
 
+    /**
+    * @title 领取矿机产值变为原始资产
+    * @desc  领取矿机产值变为原始资产,一键全领
+    * @input {"name":"buy_amount","require":"true","type":"int","desc":"买入数量"}
+    **/
+    public function machine_prod_2_origin_res()
+    {
+        //模拟矿机产出
+        //$this -> bill_model -> machineProduct();
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
+        $data = $this -> bill_model -> machine_prod_2_origin_res($loginer_id);
+        if(is_string($data)){
+            show300($data);
+        }else{
+            show200($data);
+        }
+
+    }
 
 
     /** 处理交易原始资产相关数据 End **/
@@ -558,6 +629,26 @@ class Bill extends CI_Controller
 
     }
 
+    //验证是否处于可交易时间
+    private function valid_trade_time($lvl){
+        if(is_int($lvl)){
+            show300("会员等级有错误");
+        }
+        $now_hour = date("H",time());
+        //交易时间为(1,2级9:00-21:00)和(2级以上:14:00-21:00)
+        if($lvl < 3 ){
+            if($now_hour < 9 || $now_hour > 21){
+                show300("1,2级9:00-21:00交易,现在".date("H:i",time()).",请耐心等待");
+            }
+        }else{
+            if($now_hour < 14 || $now_hour > 21){
+                show300("3级以上14:00-21:00交易,现在".date("H:i",time()).",请耐心等待");
+            }
+        }
+
+    }
+
+    
 
     /** 处理可售资产释放 End **/
 

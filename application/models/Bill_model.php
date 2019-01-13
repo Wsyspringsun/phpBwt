@@ -12,6 +12,8 @@ class Bill_model extends MY_Model
     private $tbl_origin_res_pay_bill ='origin_res_pay_bill';//原始资产卖出下单表
     private $tbl_key_val_params ='key_val_params';//各种参数数据对照表
     private $tbl_totrade_2_trade_bill ='totrade_2_trade_bill';//可售资产释放位可交易资产记录
+    private $tbl_machineprod_2_origin_bill ='machineprod_2_origin_bill';//领取矿机产值转为原始资产
+
 
     public function __construct()
     {
@@ -23,6 +25,7 @@ class Bill_model extends MY_Model
         parent::__construct($this->tbl_origin_res_pay_bill);
         parent::__construct($this->tbl_key_val_params);
         parent::__construct($this->tbl_totrade_2_trade_bill);
+        parent::__construct($this->tbl_machineprod_2_origin_bill);
 
 
 	$this->load->model(array('member_model'));		
@@ -81,8 +84,8 @@ class Bill_model extends MY_Model
         //添加矿机购买数据
         $this -> db -> insert($this -> tbl_member_machine_bill,$bill_data);
         $new_id = $this -> db -> insert_id();
-        //更新会员资源数据
-        $this -> db -> where("id",$member_id);
+        //更新会员资源数据,减少原始资产数量
+        $this -> db -> where("member_id",$member_id);
         $this -> db -> update($this -> tbl_member_resouce, $mem_bill_outline);
         $this->db->trans_complete();
 
@@ -138,7 +141,8 @@ class Bill_model extends MY_Model
             return "每人每天可挂5条买入信息";
         }
         //获取当天距离上次交易的间隔时间
-        $query_diff_minute = $this -> db -> query("select  timestampdiff(MINUTE,create_date,now()) diff_minute from origin_res_buy_bill where buy_member_id = ".$this->db->escape($member_id)." and  to_days(create_date) = to_days(now()) order by diff_minute;");
+        $query_diff_minute = $this -> db -> query("select  timestampdiff(MINUTE,create_date,now()) diff_minute from origin_res_buy_bill where buy_member_id = ".$this->db->escape($member_id)." and  to_days(create_date) = to_days(now()) order by diff_minute limit 0,1;");
+//var_dump($query_diff_minute -> row());
         if($query_diff_minute -> row() != null){
             $diff_minute = $query_diff_minute -> row() -> diff_minute;
             if($diff_minute <= 10){
@@ -217,9 +221,11 @@ class Bill_model extends MY_Model
 
     //卖给确定的买单
     public function sale2BuyBillOriginRes($params){
+        $sale_member_id = $params['sale_member_id'];
+        $buy_id = $params['buy_id'];
+
         $this->db->trans_start();
         //买单
-        $buy_id = $params['buy_id'];
         $buy_bill = $this -> db -> get_where($this -> tbl_origin_res_buy_bill,array('id' => $buy_id)) -> row();
         if($buy_bill === null){
             return "买入单不存在";
@@ -236,7 +242,6 @@ class Bill_model extends MY_Model
         
         $stat = '0-0' ;
         //创建卖单
-        $sale_member_id = $params['sale_member_id'];
 
         //TODO:运营ID卖出的额度限制:动态额度->前一日的总销量决定次日动态额度，金泰额度->一个不变数值,账户内可交易额度
         $member_res = $this -> getBillOutline($sale_member_id);
@@ -302,12 +307,18 @@ class Bill_model extends MY_Model
     }
 
     //付款完成业务处理
-    public function payed4BillOriginRes($params){
+    public function payed4BillOriginRes($loginer_id, $params){
         $this->db->trans_start();
         $origin_bill_id = $params["origin_bill_id"];
         $origin_bill = $this->db->get_where($this -> tbl_origin_res_bill,array('id' => $origin_bill_id))->row();
         if($origin_bill === null){
             return "当前订单不存在";
+        }
+        if($origin_bill -> stat  != '0-0'){
+            return "当前订单状态错误";
+        }
+        if($loginer_id != $origin_bill -> buy_member_id){
+                    return "不是买家，无权操作";
         }
         $pic_dir = $params["pic_dir"];
         $thirdpart_bill_no = $params["thirdpart_bill_no"];
@@ -389,6 +400,11 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
     }
 
     //获取买入原始资产订单列表
+    public function all_buy_bill_origin_res_list($offset){
+        return $this -> db -> order_by('create_date DESC') -> limit(PAGESIZE,$offset) -> get_where($this -> tbl_origin_res_buy_bill, array('stat' => '0'))->result();
+    }
+
+    //获取指定会员买入原始资产订单列表
     public function buy_origin_bill_res_list($offset, $member_id)
     {
         return $this -> db -> order_by('create_date DESC') -> limit(PAGESIZE,$offset) -> get_where($this -> tbl_origin_res_buy_bill, array('buy_member_id' => $member_id, 'stat' => '0'))->result();
@@ -533,6 +549,7 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
         if($member_res -> totrade_amount < 0.0005){
             return "可售资产不足，需要:0.0005以上;拥有".$member_res -> totrade_amount;
         }
+        //TODO:判断和上次领取间隔时间24小时
         //判断今天是否已经有释放
         $today_data = $this -> db -> where("member_id", $member_id) -> where(" TO_DAYS(NOW()) = TO_DAYS(create_date) ") -> get($this -> tbl_totrade_2_trade_bill) -> row();
         if($today_data != null){
@@ -569,11 +586,64 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
 
     //更新矿机订单执行次数
     public function machineProduct(){
-        $query_u = "update member_machine_bill set prod_cnt = prod_cnt + 1 where prod_cnt < bill_hour_amount; ";
+        $query_u = "update member_machine_bill set prod_cnt = prod_cnt + 1, prod_amount = prod_cnt * bill_unit_produce where prod_cnt < bill_hour_amount; ";
         $this -> db ->query($query_u);
     }
 
+    //批量领取矿机产出
+    public function machine_prod_2_origin_res($member_id){
+        $this->db->trans_start();
+        //获取距离上次领取的时间间隔
+        $query_diff_hour = $this -> db -> query("select  timestampdiff(HOUR,create_date,now()) diff_hour from `machineprod_2_origin_bill` where member_id = ".$this->db->escape($member_id)."  order by diff_hour limit 0,1;");
+        if($query_diff_hour -> row() != null){
+            $diff_hour = $query_diff_hour -> row() -> diff_hour;
+            if($diff_hour <= 24){
+                return "每隔24小时领取一次,等待".(24 - $diff_hour)."小时";
+            }
+        }
+        //更改矿机订单表领取数据
+        $this -> db -> query("update ".$this -> tbl_member_machine_bill." set last_gain = prod_amount - to_origin_amount, to_origin_amount = prod_amount where to_origin_amount < prod_amount and member_id=".$member_id.";");
+//var_dump($query_diff_hour -> row());
+        $affected_rows = $this -> db -> affected_rows();
+        if($affected_rows <= 0){
+            return "没有资源可领取";
+        }
+        //获取产出数量,可领取数量
+        $query_ready_amount = $this -> db -> query("SELECT sum(last_gain) ready_amount FROM bwt.member_machine_bill  where last_gain > 0 and member_id =".$this->db->escape($member_id).";");
+        if($query_ready_amount -> row() == null){
+            return "没有资源可领取";
+        }
+        $ready_amount = $query_ready_amount -> row() -> ready_amount;
+        if($ready_amount <= 0){
+            return "没有资源可领取";
+        }
+        //用户资源记录
+        $member_res = $this -> getBillOutline($member_id);
+        if($member_res == null){
+            return "会员资产记录未找到";
+        }
+        $origin_amount_new = $member_res -> origin_amount + $ready_amount;
+        //添加领取记录
+        $data_gain = array(
+            "gain_amount" => $ready_amount,
+            "origin_amount_old" => $member_res -> origin_amount,
+            "origin_amount" => $origin_amount_new,
+            "member_id" => $member_id
+        );
+        $this -> db -> insert($this -> tbl_machineprod_2_origin_bill, $data_gain);
+        //更改会员资产记录
+        $this -> db -> query("update ".$this -> tbl_member_resouce." set origin_amount=origin_amount+".$ready_amount." where member_id=".$member_id.";");
+        //清空临时储存的各矿机订单领取数量
+        $this -> db -> query("update ".$this -> tbl_member_machine_bill." set last_gain = 0 where  last_gain > 0 and member_id=".$member_id.";");
 
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === FALSE)
+        {
+            return "事务执行失败";
+        }
+        return $ready_amount;
+    }
 
 
     /*** 处理获取个人资产汇总相关数据End **/
