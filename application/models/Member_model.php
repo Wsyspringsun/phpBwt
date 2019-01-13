@@ -186,7 +186,7 @@ class Member_model extends MY_Model
             }
         }
 
-        return $this->db->distinct('referee_id')->get($this->table)->num_rows();
+        return $this->db->get($this->table)->num_rows();
     }
 
     //获取会员列表
