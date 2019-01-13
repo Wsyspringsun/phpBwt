@@ -80,7 +80,7 @@ class Audit extends CI_Controller
         for($i=0;$i<=1;$i++){
             $ids = $this->member_model->getSup($id, $n = 0);
             $ids = explode(',', $ids);
-            $where['is_valid'] = 1;
+            $where['1'] = 1;
             $where_in = [
                 'field' => 'id',
                 'data' => $ids
