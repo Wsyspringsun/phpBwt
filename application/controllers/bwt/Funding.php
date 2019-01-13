@@ -22,13 +22,12 @@ class Funding extends CI_Controller
     * @desc  判断运营商余额是否符合出售条件,少于后台指定的参数数值就无法销售
     * @input {"name":"sale_member_id","require":"true","type":"int","desc":"运营商id"}	
     * @output {"name":"msg","type":"string","desc":"信息说明"}
-    **/
     public function valid_saleable()
     {
         $this -> valid_fund_time();
     }
-
-
+    **/
+    
     /**
     * @title 返回购买的DTSC数量，并判断是否足够
     * @desc  返回购买的DTSC数量，并判断是否足够
@@ -36,11 +35,12 @@ class Funding extends CI_Controller
     * @input {"name":"usdt_amount","require":"true","type":"int","desc":"运营商id"}	
     * @output {"name":"msg","type":"string","desc":"信息说明"}
     * @output {"name":"dtsc_amount","type":"float","desc":"兑换的原始资产数量"}
-    **/
     public function valid_buy_amount()
     {
         $this -> valid_fund_time();
     }
+    **/
+    
 
     /**
     * @title 当前用户私募订单
@@ -295,6 +295,17 @@ echo 'newId:'.$data;
     * @title 运营商的私募交易单列表
     * @desc  运营商的私募交易单列表
     * @input {"name":"page","require":"true","type":"int","desc":"页码，1开始"}	
+    * @output {"name":"data.dtsc_amount","type":"string","desc":"兑入原始资产数量"}
+    * @output {"name":"data.usdt_amount","type":"string","desc":"兑出USDT数量"}
+    * @output {"name":"data.stat","type":"string","desc":"状态-申请:0,买家确认付款:1,卖家确认收款:2,买家确认收币:S,买家撤销或订单作废:X"}
+    * @output {"name":"data.funding_bill_no","type":"string","desc":"订单编号"}
+    * @output {"name":"data.pay_date","type":"string","desc":"买家付款日期"}
+    * @output {"name":"data.confirm_date","type":"string","desc":"卖家确认收款日期"}
+    * @output {"name":"data.buy_member_id","type":"string","desc":"买家id"}
+    * @output {"name":"data.sale_member_id","type":"string","desc":"卖家id"}
+    * @output {"name":"data.complete_date","type":"string","desc":"买家确认收币日期"}
+    * @output {"name":"data.buy_member_username","type":"string","desc":"买家用户名(放到ID位置)"}
+    * @output {"name":"data.buy_member_mobile","type":"string","desc":"买家手机号"}
     **/
     public function fund_bill_list()
     {
@@ -334,15 +345,16 @@ echo 'newId:'.$data;
     public function cnt_days()
     {
         $rec = $this -> valid_fund_time();
+        $member_id = $rec -> sale_member_id;
         $data = array(
             "start_date" => $rec -> start_date,
             "stop_date" => $rec -> stop_date,
             "exchange_percent" => $rec -> exchange_percent,
             "total_days" => $rec -> total_days,
             "cnt_days" => $rec -> cnt_days,
+            "sale_member_id" => $member_id,
             "is_busy" => false
         );
-        $member_id = $rec -> sale_member_id;
         //判断资产是否允许继续募集
         $member_res = $this -> bill_model -> getBillOutline($member_id);
         if($member_res -> origin_amount <= $rec -> lateast_origin_amount){

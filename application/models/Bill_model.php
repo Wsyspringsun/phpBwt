@@ -4,6 +4,7 @@ if (!defined('BASEPATH'))
 define('DATE_TIME_FMT','Y-m-d H:i:s');
 class Bill_model extends MY_Model
 {
+    private $tbl_member = 'member'; //会员表
     private $tbl_member_resouce ='member_resouce'; //会员资产汇总
     private $tbl_member_machine_bill ='member_machine_bill'; //会员矿机租用表
     private $tbl_origin_res_bill ='origin_res_bill';//原始资产交易表
@@ -30,6 +31,8 @@ class Bill_model extends MY_Model
         parent::__construct($this->tbl_machineprod_2_origin_bill);
         parent::__construct($this->tbl_funding_rec);
         parent::__construct($this->tbl_funding_bill);
+        parent::__construct($this->tbl_member);
+
 
 	$this->load->model(array('member_model'));		
     }
@@ -697,12 +700,7 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
 
     //运营商获取当前私募订单列表
     public function getFundingBillList($member_id, $offset){
-        $this -> db -> order_by('create_date DESC');
-        $this -> db -> limit(PAGESIZE,$offset);
-        return $this -> db -> get_where($this -> tbl_funding_bill, array(
-            "stat" => "1",
-            "sale_member_id" => $member_id
-        )) -> result();
+        return $this -> db -> query("SELECT a.*, b.mobile buy_member_mobile ,b.user_name buy_member_username FROM bwt.funding_bill a, member b where a.buy_member_id = b.id and a.stat = '1' and a.sale_member_id = ".$member_id." order by create_date desc limit ".$offset.",".PAGESIZE.";") -> result();
     }
 
 
