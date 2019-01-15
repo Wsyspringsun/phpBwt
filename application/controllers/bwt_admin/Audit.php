@@ -47,8 +47,8 @@ class Audit extends CI_Controller
 	public function audiRsult(){
 		
 		//print_r(654);exit;
-			 $id = 19;
-			 $audit_id=1;
+			 $id = 1;
+			 $audit_id=2;
 		 
 			 $audit['status']=1;
 			 $audit['operation_id']='1';
@@ -195,7 +195,7 @@ class Audit extends CI_Controller
                                 'member_lvl' => 1
 
                             ];
-                            $num = 9;
+                            $num = 5;
                     }
 
                     $cWhere_in = [
