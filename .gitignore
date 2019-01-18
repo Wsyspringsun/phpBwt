@@ -1,6 +1,7 @@
 .svn/
+application/dist/*
+application/controllers/Test.php
 application/config/database.php
 dbtask.txt
 public/sess_save_path/ci_session*
 apidoc/class*
-application/controllers/*.php*

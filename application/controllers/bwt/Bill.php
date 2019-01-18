@@ -1,4 +1,5 @@
 <?php
+
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
@@ -148,64 +149,6 @@ class Bill extends CI_Controller
     /** 处理交易原始资产相关数据 **/
 
     /**
-     * @title 原始资产转为可售资产
-     * @desc  原始资产转为可售资产
-     * @input {"name":"amount","require":"true","type":"int","desc":"转的数量"}	
-     * @input {"name":"pwd_second","require":"true","type":"int","desc":"二级密码"}	
-     * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
-     * @output {"name":"msg","type":"string","desc":"信息说明"}
-     * @output {"name":"data","type":"int","desc":"是否成功"}
-    **/
-    public function origin_2_totrade_res()
-    {
-        $pwd_second = $this->input->post("pwd_second");
-        if($pwd_second == null){
-            show300("缺少二级密码");
-        }
-
-        $amount = $this->input->post("amount");
-        if($amount == null){
-            show300("缺少转化数量");
-        }
-        if(!is_numeric($amount)){
-            show300("数量必须是数字");
-        }
-        $len = strlen($amount);
-        //取整十数字
-        $n = 10 ** ($len-1);
-        $amount = (int)($amount / $n) * $n;
-        if($amount <= 0 ){
-            show300("数量必须大于0");
-        }
-        //登录用户
-        $loginer_id = $this->session->tempdata('id');
-        if($loginer_id == null){
-            show300("请先登录");
-        }
-        $member = $this->member_model->getwhereRow(['id' => $loginer_id],'*');
-        if($member == null){
-            return "缺少用户记录";
-        }
-        //验证二级密码
-        if($member["pwd_second"] != $pwd_second){
-            show300("二级密码错误");
-        }
-
-        $data = $this -> bill_model -> origin_2_totrade_res($loginer_id, $amount);
-
-        if(is_string($data)){
-            show300($data);
-        }else{
-            if($data == 1){
-                show200(true);
-            }else{
-                show300("错误影响行数，请联系管理员");
-            }
-        }
-    }
-
-
-    /**
      * @title 购买原始资产下单
      * @desc  会员买入挂单
      * @input {"name":"pwd_second","require":"true","type":"string","desc":"买家会员二级密码"}	
@@ -226,16 +169,15 @@ class Bill extends CI_Controller
             }
             $params[$k] = $this -> input -> post($k);
         }
+        if($params["amount"] <= 0){
+            show300("数量不得小于0");
+        }
         //获取登录用户的id
         $loginer_id = $this->session->tempdata('id');
         if($loginer_id == null){
             show300("请先登录");
         }
         $buy_member = $this->member_model->getwhereRow(['id' => $loginer_id],'*');
-        //必须认证用户可以买入
-        if($buy_member["is_valid"] != "1"){
-            show300("只有认证用户可以下单，请尽快认证");
-        }
         //交易时间为(1,2级9:00-21:00)和(2级以上:14:00-21:00)
         $this -> valid_trade_time($buy_member["member_lvl"]);
         //验证二级密码
@@ -503,7 +445,7 @@ class Bill extends CI_Controller
     }
 
     /**
-    * @title 获取原始资源交易单详情
+    * @title 获取匹配的原始资源交易单详情
     * @desc  获取原始资源交易单详情
     * @input {"name":"type","require":"true","type":"string","desc":"获取方式-买家获取:0,卖家获取:1"}
     * @input {"name":"page","require":"true","type":"int","desc":"页码"}
@@ -562,32 +504,62 @@ class Bill extends CI_Controller
         if($loginer_id == null){
             show300("请先登录");
         }
-        $requires = array("buy_amount" => "缺少买入数量");
-        $params = array();
-        foreach($requires as $k => $v)
-        {
-            if($this->input->post($k) == null){
-                show300($v);
-            }
-            $params[$k] = $this -> input -> post($k);
+        $id = $this->input->post("id");
+        if($id == null){
+            show300("缺少要买入的订单id");
         }
-        $data = $this -> bill_model -> origin_bill_res_tax($loginer_id, $params["buy_amount"]);
-        if(is_string($data)){
-            show300($data);
-        }else{
-            show200($data);
+        //获取交易大厅的买入订单 
+        $bill = $this -> bill_model -> buy_bill_origin_res_list($id);
+        if(is_string($bill)){
+            show300($bill);
         }
+        //获取卖出费率
+        $percent = $this -> bill_model -> member_tax_percent($loginer_id);
+        if($percent <= 0){
+            $percent = 0.3;
+        }
+        $amount = $bill -> amount;
+        $total_amount = $amount + $amount * $percent;
+        //组织语言
+        $data = "本次出售".$bill -> amount ."个交易资产,可收".$bill -> pay_amount."元,需要".$percent."手续费出售".$amount."扣".$total_amount.",确认出售吗?";
+        show200($data);
     }
+    
+    //验证是否处于可交易时间
+    private function valid_trade_time($lvl){
+        if(is_int($lvl)){
+            show300("会员等级有错误");
+        }
+        $now_hour = date("H",time());
+        //交易时间为(1,2级9:00-21:00)和(2级以上:14:00-21:00)
+        if($lvl < 3 ){
+            if($now_hour < 9 || $now_hour > 21){
+                show300("1,2级9:00-21:00交易,现在".date("H:i",time()).",请耐心等待");
+            }
+        }else{
+            if($now_hour < 14 || $now_hour > 21){
+                show300("3级以上14:00-21:00交易,现在".date("H:i",time()).",请耐心等待");
+            }
+        }
+
+    }
+
+
+
+    /** 处理交易原始资产相关数据 End **/
+
+    /** 处理各种资产的转换  **/
 
     /**
     * @title 领取矿机产值变为原始资产
     * @desc  领取矿机产值变为原始资产,一键全领
-    * @input {"name":"buy_amount","require":"true","type":"int","desc":"买入数量"}
+    * @output {"name":"data","type":"int","desc":"领取的数量"}
     **/
     public function machine_prod_2_origin_res()
     {
-        //模拟矿机产出
+        //模拟矿机产出 TODO:上线时删除
         //$this -> bill_model -> machineProduct();
+
         $loginer_id = $this->session->tempdata('id');
         if($loginer_id == null){
             show300("请先登录");
@@ -602,9 +574,63 @@ class Bill extends CI_Controller
     }
 
 
-    /** 处理交易原始资产相关数据 End **/
+    /**
+     * @title 原始资产转为可售资产
+     * @desc  原始资产转为可售资产
+     * @input {"name":"amount","require":"true","type":"int","desc":"转的数量"}	
+     * @input {"name":"pwd_second","require":"true","type":"int","desc":"二级密码"}	
+     * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
+     * @output {"name":"msg","type":"string","desc":"信息说明"}
+     * @output {"name":"data","type":"int","desc":"是否成功"}
+    **/
+    public function origin_2_totrade_res()
+    {
+        $pwd_second = $this->input->post("pwd_second");
+        if($pwd_second == null){
+            show300("缺少二级密码");
+        }
 
-    /** 处理可售资产释放  **/
+        $amount = $this->input->post("amount");
+        if($amount == null){
+            show300("缺少转化数量");
+        }
+        if(!is_numeric($amount)){
+            show300("数量必须是数字");
+        }
+        $len = strlen($amount);
+        //取整十数字
+        $n = 10 ** ($len-1);
+        $amount = (int)($amount / $n) * $n;
+        if($amount <= 0 ){
+            show300("数量必须大于0");
+        }
+        //登录用户
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
+        }
+        $member = $this->member_model->getwhereRow(['id' => $loginer_id],'*');
+        if($member == null){
+            return "缺少用户记录";
+        }
+        //验证二级密码
+        if($member["pwd_second"] != $pwd_second){
+            show300("二级密码错误");
+        }
+
+        $data = $this -> bill_model -> origin_2_totrade_res($loginer_id, $amount);
+
+        if(is_string($data)){
+            show300($data);
+        }else{
+            if($data == 1){
+                show200(true);
+            }else{
+                show300("错误影响行数，请联系管理员");
+            }
+        }
+    }
+
 
     /**
     * @title 释放可售资产为可交易资产
@@ -629,28 +655,8 @@ class Bill extends CI_Controller
 
     }
 
-    //验证是否处于可交易时间
-    private function valid_trade_time($lvl){
-        if(is_int($lvl)){
-            show300("会员等级有错误");
-        }
-        $now_hour = date("H",time());
-        //交易时间为(1,2级9:00-21:00)和(2级以上:14:00-21:00)
-        if($lvl < 3 ){
-            if($now_hour < 9 || $now_hour > 21){
-                show300("1,2级9:00-21:00交易,现在".date("H:i",time()).",请耐心等待");
-            }
-        }else{
-            if($now_hour < 14 || $now_hour > 21){
-                show300("3级以上14:00-21:00交易,现在".date("H:i",time()).",请耐心等待");
-            }
-        }
-
-    }
-
     
-
-    /** 处理可售资产释放 End **/
+    /** 处理各种资产的转换 End **/
 
         
     
@@ -679,12 +685,11 @@ class Bill extends CI_Controller
      **/
     public function bill_outline()
     {
-        if(empty($this->input->post('id')))
-        {
-            show300('缺少id');
+        $loginer_id = $this->session->tempdata('id');
+        if($loginer_id == null){
+            show300("请先登录");
         }
-        $id = $this->input->post('id');
-        $data = $this -> bill_model -> getBillOutline($id);
+        $data = $this -> bill_model -> getBillOutline($loginer_id);
         show200($data);
     }
 

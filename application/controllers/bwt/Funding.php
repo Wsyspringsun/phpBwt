@@ -56,10 +56,6 @@ class Funding extends CI_Controller
             show300("请先登录");
         }
         $member = $this->member_model->getwhereRow(['id' => $loginer_id],'*');
-        //必须认证用户可以买入
-        if($member["is_valid"] != "1" ){
-            show300("必须认证用户可以交易,请尽快认证");
-        }
         $bill = $this->bill_model -> getCurrentBuyFundingBill($loginer_id);
         if($bill != null){
             $bill -> usdt_code =  $rec -> usdt_code;
@@ -112,16 +108,12 @@ class Funding extends CI_Controller
             show300("请先登录");
         }
         $member = $this->member_model->getwhereRow(['id' => $loginer_id],'*');
-        //必须认证用户可以买入
-        if($member["is_valid"] != "1" ){
-            show300("必须认证用户可以交易,请尽快认证");
-        }
 
         if($member["pwd_second"] != $this->input->post("pwd_second") ){
             show300("二级密码错误");
         }
         if($member["china_id"] != $this->input->post("china_id") ){
-            show300("身份证号错误");
+            //show300("身份证号错误");
         }
 
         $current_bill = $this->bill_model -> getCurrentBuyFundingBill($loginer_id);
@@ -160,7 +152,6 @@ class Funding extends CI_Controller
             "sale_member_id" => $rec -> sale_member_id
         );
         $data = $this -> bill_model -> create_funding_bill($bill);
-echo 'newId:'.$data;
         if(is_string($data)){
             show300($data);
         }else{
@@ -193,7 +184,17 @@ echo 'newId:'.$data;
             show300("缺少订单id");
         }
 
-        $this -> bill_model -> update_funding_bill($loginer_id, $id, "X");
+        $data = $this -> bill_model -> update_funding_bill($loginer_id, $id, "X");
+        if(is_string($data) ){
+            show300($data);
+        }else{
+            if($data == true){
+                show200($data);
+            }else{
+                show300("未知错误");
+            }
+        }
+
 
     }
 
@@ -233,7 +234,6 @@ echo 'newId:'.$data;
     * @input {"name":"id","require":"true","type":"string","desc":"订单id"}	
     * @output {"name":"msg","type":"string","desc":"信息说明"}
     * @output {"name":"data","type":"string","desc":"订单信息"}
-    **/
     public function confirm_dtsc_arrive()
     {
         $this -> valid_fund_time();
@@ -256,6 +256,8 @@ echo 'newId:'.$data;
 
     }
 
+    **/
+    
     /** 接受私募的会员操作区域 End **/
 
 
@@ -282,13 +284,26 @@ echo 'newId:'.$data;
             show300("缺少订单id");
         }
 
-        $data = $this -> bill_model -> update_funding_bill($loginer_id, $id, "2");
+        
+        $data = $this -> bill_model -> update_funding_bill($loginer_id, $id, "S");
         if(is_string($data) ){
             show300($data);
         }else{
-            show200(true);
+            if($data == true){
+                //发送短信
+                $bill = $this -> bill_model -> getFundingBillDetail($id);
+                $dtsc_amount = $bill -> dtsc_amount;
+                $buyer_res = $this -> bill_model -> getBillOutline($bill -> buy_member_id);
+                $saler_res = $this -> bill_model -> getBillOutline($bill -> sale_member_id);
+                $sms = new SmsDemo();
+                $resBuy = $sms->sendSms($bill -> buy_member_mobile, "SMS_155357227", SMS_SIGN,['customer'=>$bill -> buy_member_username, 'amount' => $dtsc_amount, 'balance' =>$buyer_res -> origin_amount]);
+                $resSale = $sms->sendSms($bill -> sale_member_mobile, "SMS_155455571", SMS_SIGN,['customer'=>$bill -> sale_member_username, 'amount' => $dtsc_amount, 'balance' => $saler_res -> origin_amount]);
+                show200(true);
+                
+            }else{
+                show300("未知错误");
+            }
         }
-
     }
 
     /**
@@ -357,7 +372,8 @@ echo 'newId:'.$data;
         );
         //判断资产是否允许继续募集
         $member_res = $this -> bill_model -> getBillOutline($member_id);
-        if($member_res -> origin_amount <= $rec -> lateast_origin_amount){
+        $foren_amount = $this -> bill_model -> getForenOriginAmountByFunding($member_id);
+        if(($member_res -> origin_amount - $foren_amount) <= $rec -> lateast_origin_amount){
             $data["is_busy"] = true;
         } 
         if($rec != null){

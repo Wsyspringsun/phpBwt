@@ -109,11 +109,11 @@ class Bill_model extends MY_Model
         $data = null;
         if($type == 0){
             //有效的
-            $data =  $this -> db -> order_by('create_date DESC') -> limit(PAGESIZE,$offset) -> where('`prod_cnt` < `bill_hour_amount`') -> get_where($this->tbl_member_machine_bill,array('member_id' => $member_id))->result();
+            $data =  $this -> db -> order_by('modify_date DESC') -> limit(PAGESIZE,$offset) -> where('`prod_cnt` < `bill_hour_amount`') -> get_where($this->tbl_member_machine_bill,array('member_id' => $member_id))->result();
 
         }else{
             //过期的
-            $data =  $this -> db -> order_by('create_date DESC') -> limit(PAGESIZE,$offset) -> where('`prod_cnt` >= `bill_hour_amount`') -> get_where($this->tbl_member_machine_bill,array('member_id' => $member_id ))->result();
+            $data =  $this -> db -> order_by('modify_date DESC') -> limit(PAGESIZE,$offset) -> where('`prod_cnt` >= `bill_hour_amount`') -> get_where($this->tbl_member_machine_bill,array('member_id' => $member_id ))->result();
         }
         //echo $this->db->last_query();
         return $data;
@@ -263,7 +263,7 @@ class Bill_model extends MY_Model
         //判断可交易资产是否足够 可交易资产-冻结的可交易资产-缴纳的手续费
         $avaliable_tradeable_amount = $member_res -> tradeable_amount - $member_res -> tradeable_foren_amount ;
         if($avaliable_tradeable_amount < ($pay_amount + $tax)){
-            return "需要:(卖出数目+手续费):" . $tax .   "+" . $amount . ";可用:(拥有-冻结)" . $member_res -> tradeable_amount . "-" . $member_res -> tradeable_foren_amount . "!额度不足!";
+            return "需要:(卖出数目+手续费):" . $amount . "+" . $tax . ";可用:(拥有-冻结)" . $member_res -> tradeable_amount . "-" . $member_res -> tradeable_foren_amount . "!额度不足!";
         }
 
         $sale_data = array(
@@ -407,13 +407,19 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
 
     //获取买入原始资产订单列表
     public function all_buy_bill_origin_res_list($offset){
-        return $this -> db -> order_by('create_date DESC') -> limit(PAGESIZE,$offset) -> get_where($this -> tbl_origin_res_buy_bill, array('stat' => '0'))->result();
+        return $this -> db -> order_by('modify_date DESC') -> limit(PAGESIZE,$offset) -> get_where($this -> tbl_origin_res_buy_bill, array('stat' => '0'))->result();
     }
+
+    //获取买入原始资产订单详情
+    public function buy_bill_origin_res_list($id){
+        return $this -> db -> order_by('modify_date DESC') -> get_where($this -> tbl_origin_res_buy_bill, array('id' =>$id))->row();
+    }
+
 
     //获取指定会员买入原始资产订单列表
     public function buy_origin_bill_res_list($offset, $member_id)
     {
-        return $this -> db -> order_by('create_date DESC') -> limit(PAGESIZE,$offset) -> get_where($this -> tbl_origin_res_buy_bill, array('buy_member_id' => $member_id, 'stat' => '0'))->result();
+        return $this -> db -> order_by('modify_date DESC') -> limit(PAGESIZE,$offset) -> get_where($this -> tbl_origin_res_buy_bill, array('buy_member_id' => $member_id, 'stat' => '0'))->result();
     }
 
     //获取卖出原始资产应付手续费
@@ -426,11 +432,21 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
         return $buy_amount * $params_val;
     }
 
+    //获取卖出用户的手续费率
+    public function member_tax_percent($sale_member_id){
+        $member = $this->member_model->getwhereRow(['id' => $sale_member_id],'*    ');
+        $profit_lvl = $member["profit_lvl"] ;
+        //对照表
+        $tax_row = $this -> db -> get_where($this -> tbl_key_val_params, ["params_type" => "1", "params_key" => $profit_lvl]) -> row_array();
+        $params_val = (float)$tax_row["params_val"];
+        return $params_val;
+    }
+
 
     //获取卖出原始资产表
     public function sale_origin_bill_res_list($offset, $member_id)
     {
-        return $this -> db -> order_by('create_date DESC') -> limit(PAGESIZE,$offset) -> get_where($this -> tbl_origin_res_sale_bill, array('sale_member_id' => $member_id, 'stat' => '0'))->result();
+        return $this -> db -> order_by('modify_date DESC') -> limit(PAGESIZE,$offset) -> get_where($this -> tbl_origin_res_sale_bill, array('sale_member_id' => $member_id, 'stat' => '0'))->result();
     }
 
 
@@ -440,17 +456,17 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
         $member_id = $loginer_id;
         if($type == '0'){
             //买家获取订单
-            return $this -> db -> order_by('create_date DESC') -> limit(PAGESIZE,$offset) -> get_where($this -> tbl_origin_res_bill, array('buy_member_id' => $member_id, 'stat' => '0-0')) -> result();
+            return $this -> db -> order_by('modify_date DESC') -> limit(PAGESIZE,$offset) -> get_where($this -> tbl_origin_res_bill, array('buy_member_id' => $member_id, 'stat' => '0-0')) -> result();
         }else if($type == '1'){
             //卖家获取订单
-            return $this -> db -> order_by('create_date DESC') -> limit(PAGESIZE,$offset) -> get_where($this -> tbl_origin_res_bill, array('sale_member_id' => $member_id, 'stat' => '0-0')) -> result();
+            return $this -> db -> order_by('modify_date DESC') -> limit(PAGESIZE,$offset) -> get_where($this -> tbl_origin_res_bill, array('sale_member_id' => $member_id, 'stat' => '0-0')) -> result();
         }else{
             return "缺少操作方式";
         }
 
     }
 
-    //获取业务订单详情
+    //获取已匹配的业务订单详情
     public function origin_bill_res_detail($type, $loginer_id, $id)
     {
         $origin_bill = $this->db->get_where($this -> tbl_origin_res_bill,array('id' => $id))->row();
@@ -480,8 +496,24 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
 
     /** 处理原始资产交易 End**/
 
+    
+    /*** 处理获取个人资产汇总相关数据 **/
 
-    /** 处理可售资产 **/
+    //获取各项资产汇总 
+    public function getBillOutline($member_id){
+        return $this->db->get_where($this->tbl_member_resouce,array('member_id' => $member_id))->row();
+    }
+
+    //增加冻结资产
+    public function addTradeableResOfForen($member_id, $amount){
+        $sql_update = "update ".$this -> tbl_member_resouce." set tradeable_foren_amount=tradeable_foren_amount+".$amount." where member_id=".$member_id.";";
+        $this -> db -> query($sql_update);
+    }
+    //减去冻结资产
+    public function delTradeableResOfForen($member_id, $amount){
+        $sql_update = "update ".$this -> tbl_member_resouce." set tradeable_foren_amount=tradeable_foren_amount-".$amount." where member_id=".$member_id.";";
+        $this -> db -> query($sql_update);
+    }
 
     //原始资产转为可售资产
     public function origin_2_totrade_res($loginer_id, $amount)
@@ -503,28 +535,7 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
     }
 
 
-    /** 处理可售资产 End**/
-
-
-    /*** 处理获取个人资产汇总相关数据 **/
-
-    //获取各项资产汇总 
-    public function getBillOutline($member_id){
-        return $this->db->get_where($this->tbl_member_resouce,array('member_id' => $member_id))->row();
-    }
-
-    //增加冻结资产
-    public function addTradeableResOfForen($member_id, $amount){
-        $sql_update = "update ".$this -> tbl_member_resouce." set tradeable_foren_amount=tradeable_foren_amount+".$amount." where member_id=".$member_id.";";
-        $this -> db -> query($sql_update);
-    }
-    //减去冻结资产
-    public function delTradeableResOfForen($member_id, $amount){
-        $sql_update = "update ".$this -> tbl_member_resouce." set tradeable_foren_amount=tradeable_foren_amount-".$amount." where member_id=".$member_id.";";
-        $this -> db -> query($sql_update);
-    }
-
-    //释放可售资产为可交易资产,全体释放
+    /** 释放可售资产为可交易资产,全体释放 暂时废弃
     public function toTradeRes2TradeableRes(){
         $this->db->trans_start();
         //插入明细记录
@@ -545,9 +556,9 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
             //return $this -> db -> query("select `realease_amount`, `totrade_amount_old`, `totrade_amount`, `trade_amount_old`, `trade_amount`, `member_id` from totrade_2_trade_bill;") -> result();
             return true;
         }
-    }
+    } **/
 
-    //指定会员释放
+    //指定会员释放可售资产为可交易资产,千分之二的方式释放
     public function releaseTradeableRes($member_id){
         //获取用户资产
         $member_res = $this -> getBillOutline($member_id);
@@ -556,11 +567,19 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
             return "可售资产不足，需要:0.0005以上;拥有".$member_res -> totrade_amount;
         }
         //TODO:判断和上次领取间隔时间24小时
-        //判断今天是否已经有释放
+        $query_diff_hour = $this -> db -> query("select  timestampdiff(HOUR,create_date,now()) diff_hour from `totrade_2_trade_bill` where member_id = ".$this->db->escape($member_id)."  order by diff_hour limit 0,1;");
+        if($query_diff_hour -> row() != null){
+            $diff_hour = $query_diff_hour -> row() -> diff_hour;
+            if($diff_hour <= 24){
+                return "每隔24小时领取一次,等待".(24 - $diff_hour)."小时";
+            }
+        }
+
+        /**判断今天是否已经有释放,改为 判断和上次领取间隔时间24小时
         $today_data = $this -> db -> where("member_id", $member_id) -> where(" TO_DAYS(NOW()) = TO_DAYS(create_date) ") -> get($this -> tbl_totrade_2_trade_bill) -> row();
         if($today_data != null){
             return "每天一次机会,今天已经释放过了";
-        }
+        }**/
         $this->db->trans_start();
         //插入明细记录
         $realease_amount = $member_res -> totrade_amount * 0.002;
@@ -590,7 +609,7 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
     }
 
 
-    //更新矿机订单执行次数
+    //更新矿机订单执行次数,每小时会被调用一次
     public function machineProduct(){
         $query_u = "update member_machine_bill set prod_cnt = prod_cnt + 1, prod_amount = prod_cnt * bill_unit_produce where prod_cnt < bill_hour_amount; ";
         $this -> db ->query($query_u);
@@ -637,8 +656,8 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
             "member_id" => $member_id
         );
         $this -> db -> insert($this -> tbl_machineprod_2_origin_bill, $data_gain);
-        //更改会员资产记录
-        $this -> db -> query("update ".$this -> tbl_member_resouce." set origin_amount=origin_amount+".$ready_amount." where member_id=".$member_id.";");
+        //更改会员资产记录(DTSC总量增加，原始资产数量增加)
+        $this -> db -> query("update ".$this -> tbl_member_resouce." set origin_amount=origin_amount+".$ready_amount.", base_amount=base_amount+".$ready_amount." where member_id=".$member_id.";");
         //清空临时储存的各矿机订单领取数量
         $this -> db -> query("update ".$this -> tbl_member_machine_bill." set last_gain = 0 where  last_gain > 0 and member_id=".$member_id.";");
 
@@ -681,7 +700,7 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
         
     //获取私募剩余天数
     public function getFundingRec(){
-        return $this -> db -> query("SELECT *, to_days(stop_date) - to_days(start_date) total_days , to_days(stop_date) - to_days(now()) cnt_days FROM ".$this -> tbl_funding_rec." where stop_date > start_date order by create_date desc limit 0,1; ") -> row();
+        return $this -> db -> query("SELECT *, to_days(stop_date) - to_days(start_date) total_days , to_days(stop_date) - to_days(now()) cnt_days FROM ".$this -> tbl_funding_rec." where stop_date > start_date order by start_date desc limit 0,1; ") -> row();
         
     }
 
@@ -700,9 +719,13 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
 
     //运营商获取当前私募订单列表
     public function getFundingBillList($member_id, $offset){
-        return $this -> db -> query("SELECT a.*, b.mobile buy_member_mobile ,b.user_name buy_member_username FROM bwt.funding_bill a, member b where a.buy_member_id = b.id and a.stat = '1' and a.sale_member_id = ".$member_id." order by create_date desc limit ".$offset.",".PAGESIZE.";") -> result();
+        return $this -> db -> query("SELECT a.*, b.mobile buy_member_mobile ,b.user_name buy_member_username FROM bwt.funding_bill a, member b where a.buy_member_id = b.id  and a.sale_member_id = ".$member_id." order by modify_date desc limit ".$offset.",".PAGESIZE.";") -> result();
     }
 
+    //根据id 获取私募订单详情
+    public function getFundingBillDetail($id){
+        return $this -> db -> query("SELECT a.*, b.mobile buy_member_mobile ,b.user_name buy_member_username, c.mobile sale_member_mobile ,c.user_name sale_member_username FROM bwt.funding_bill a, member b, member c where a.buy_member_id = b.id and a.sale_member_id = c.id  and a.id = ".$id.";") -> row();
+    }
 
     //处于冻结状态的运营商原始资产
     public function getForenOriginAmountByFunding($member_id){
@@ -734,7 +757,7 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
                 }
                 $this -> db -> set("pay_date", date(DATE_TIME_FMT, time()));
                 break;
-            case "2":
+            case "S":
                 //运营方确认收款并放币,增加买家原始资产，减少卖家原始资产
                 if($bill -> stat != "1"){
                     return "不是已付款状态订单,无法执行支付确认";
@@ -753,18 +776,14 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
                 $this -> db -> query($sql_update_sale);
                 $this -> db -> set("confirm_date", date(DATE_TIME_FMT, time()));
                 break;
-            case "S":
-                //买家确认收币
-                if($bill -> stat != "2"){
-                    return "不是卖家已确认状态订单,无法执行买家确认";
-                }
-                if($loginer_id != $bill -> buy_member_id){
-                    return "不是买家,无权操作订单";
-                }
-                $this -> db -> set("complete_date", date(DATE_TIME_FMT, time()));
-                break;
             case "X":
+                if($bill -> stat != "0"){
+                    return "不是申请状态订单,无法执行撤销";
+                }
                 //买家撤销订单，活动结束作废
+                if($bill -> sale_member_id != $loginer_id && $bill -> buy_member_id != $loginer_id){
+                    return "不是运营商,也不是买家,无权操作订单";
+                }
                 break;
             default:
                 break;
@@ -779,6 +798,7 @@ $this -> delTradeableResOfForen($sale_member_id, ($origin_bill -> amount + $orig
         {
             return "事务执行失败";
         }
+
         return true;
 
     }
