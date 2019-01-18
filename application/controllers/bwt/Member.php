@@ -10,6 +10,17 @@ class Member extends CI_Controller
         $this->load->library(array('sms/api_demo/SmsDemo', 'weixin/wechatCallbackapiTest'));
         $this->load->model(array('member_model', 'machine_model', 'member_resouce_model','member_pay_record_model','admin_receive_model','member_audit_model'));
     }
+	
+	
+	
+	public function is_login(){
+		$id = $this->session->tempdata('id');
+		 if($id){
+			 show200('已经登录');
+		 }else{
+			 show300('未登录');
+		 }
+	}
 
     /**
      * @title 用户注册
@@ -445,7 +456,10 @@ class Member extends CI_Controller
         if (strtolower($this->session->tempdata('loginYzm')) != $loginYzm) {
          //TODO:del   show300('验证码错误');
         }
-        $user_pad = $this->member_model->getwhereRow(['mobile' => $mobile], 'pwd,id');
+        $user_pad = $this->member_model->getwhereRow(['mobile' => $mobile], 'pwd,id,is_login');
+		if($user_pad['is_login']==1){
+			show300('此账号已经登录');
+		}
         //$data['id']=$user_pad['id'];
         if (empty($user_pad)) {
             show300('您还不是会员，请先注册');
@@ -454,6 +468,8 @@ class Member extends CI_Controller
             show300('密码错误');
         }
         $session_user['id'] = $user_pad['id'];
+		$mem['is_login']=1;
+		$this->member_model->updateWhere(['id' => $session_user['id']],$mem['is_login']);
         $this->session->set_tempdata($session_user);
         //print_r($this->session->tempdata('id'));exit;
         show200('登陆成功');
@@ -467,6 +483,10 @@ class Member extends CI_Controller
      */
 	
 	public function loginOut(){
+		
+		$id=$this->getId();
+		$mem['is_login']=0;
+		$this->member_model->updateWhere(['id' =>$id],$mem['is_login']);
 		$this->session->unset_userdata('id');
 		show200('退出成功');
 	}
@@ -825,5 +845,40 @@ class Member extends CI_Controller
 
         return true;
     }
-
+		/**连续签到的实现方式*/
+		public function signList(){
+		/**先查到是否有这个用户*/
+		$m_id = $_GET['m_id'];
+		$sign = D('Sign')->where(array("m_id"=>$m_id))->limit(0)->find();
+		/**如果有就进行判断时间差，然后处理签到次数*/
+		if($sign){
+		/**昨天的时间戳时间范围*/
+		$t = time();
+		$last_start_time = mktime(0,0,0,date("m",$t),date("d",$t)-1,date("Y",$t));
+		$last_end_time = mktime(23,59,59,date("m",$t),date("d",$t)-1,date("Y",$t));
+		/**今天的时间戳时间范围*/
+		// $now_start_time = mktime(0,0,0,date("m",$t),date("d",$t),date("Y",$t));
+		// $now_end_time = mktime(23,59,59,date("m",$t),date("d",$t),date("Y",$t));
+		/**判断最后一次签到时间是否在昨天的时间范围内*/
+		if($last_start_time<$sign['time']&&$sign['time']<$last_end_time){
+		$da['time'] = time();
+		$da['count'] = $sign['count']+1;
+		/**这里还可以加一些判断连续签到几天然后加积分等等的操作*/
+		D('Sign')->where(array("m_id"=>$m_id))->save($da);
+		}else{
+		/**返回已经签到的操作*/
+		$da['time'] = time();
+		$da['count'] = 0;
+		D('Sign')->where(array("m_id"=>$m_id))->save($da);
+		}
+		}else{
+		$data['m_id'] = $m_id;
+		$data['time'] = time();
+		$data['sign'] = 1;
+		$res = D("Sign")->add($data);
+		if($res){
+		/**成功就返回，或者处理一些程序，比如加积分*/
+		}
+		}
+		}
 }
