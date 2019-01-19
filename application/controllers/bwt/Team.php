@@ -15,6 +15,10 @@ class Team extends CI_Controller
      * @desc  (获取团队列表)
      * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
      * @output {"name":"msg","type":"string","desc":"信息说明"}
+	 * @input {"name":"page","require":"true","type":"int","desc":"页数"}
+	 
+	 * @input {"name":"where","require":"true","type":"int","desc":"排序说明 1 姓名 2等级 3直推 4算力 5注册"}
+	 
 	 * @output {"name":"data.user_res.dirCount","require":"true","type":"int","desc":"直推客户"}
      * @output {"name":"data.user_res.regCount","require":"true","type":"int","desc":"团队"}
      * @output {"name":"data.user_res.dirName","require":"true","type":"int","desc":"推荐人"}
@@ -27,17 +31,19 @@ class Team extends CI_Controller
      * @output {"name":"data.team_res.real_name","require":"true","type":"int","desc":"用户名字"}
      */
 	public function myTeam(){
-		$id=$this->getId();
-		 //$id=3;
+		//$id=$this->getId();
+		 $id=1;
 		 $page=empty($this->input->post('page'))?1:($this->input->post('page'));//页数
 		 $offset=$this->getPage($page,TEANLIMIT);//偏移量
-		 $data=$this->getTeamData($id,$offset);
+		 $where=empty($this->input->post('where'))?4:($this->input->post('where'));
+		 $data=$this->getTeamData($id,$offset,$where);
 		 show200($data);
 	}
 	 /**
      * @title 查看团队
      * @desc  (查看团队)
 	 * @input {"name":"id","require":"true","type":"int","desc":"用户id"}
+	 * @input {"name":"page","require":"true","type":"int","desc":"页数"}
      * @output {"name":"code","type":"int","desc":"200:成功,300各种提示信息"}
      * @output {"name":"msg","type":"string","desc":"信息说明"}
       * @output {"name":"data.user_res.dirCount","require":"true","type":"int","desc":"直推客户"}
@@ -60,7 +66,8 @@ class Team extends CI_Controller
 			}
 		 $page=empty($this->input->post('page'))?1:($this->input->post('page'));//页数
 		 $offset=$this->getPage($page,TEANLIMIT);//偏移量
-		 $data=$this->getTeamData($id,$offset);
+		 $where=empty($this->input->post('where'))?4:($this->input->post('where'));
+		 $data=$this->getTeamData($id,$offset,$where);
 		show200($data);
 	}
 	
@@ -68,7 +75,7 @@ class Team extends CI_Controller
      * @title 后台用
      * @desc  (后台用)
      */
-	public function getTeamData($id,$offset){
+	public function getTeamData($id,$offset,$where){
 		$data['user_res']['dirCount']=$this->member_model->getTeamCount($id);//直推人数
 		$data['user_res']['dirName']=$this->member_model->getDirName($id)['real_name'];//推荐人名称
 		$user_ids=$this->member_model->getChild($id);
@@ -88,6 +95,9 @@ class Team extends CI_Controller
 					$data['user_res']['regCount']=0;//注册人数 
 			}
 		$data['team_res']=$this->member_model->getTeam(TEANLIMIT,$offset,$id);
+		//echo "<pre>";
+		//print_r($data['team_res']);exit;
+		
 		if(!empty($data['team_res'])){
 				foreach($data['team_res'] as $k => $v){
 					$data['team_res'][$k]['mobile']=substr_replace($v['mobile'],'****',3,4);
@@ -115,6 +125,16 @@ class Team extends CI_Controller
 				  }
 			}  
 		}
+		//print_r($where);exit;
+		if($where==2){
+			$data['team_res']=$this->array_sort($data['team_res'],'member_lvl','desc');
+		}else if($where==3){
+			$data['team_res']=$this->array_sort($data['team_res'],'dirCount','desc');
+		}else if($where==4){
+			$data['team_res']=$this->array_sort($data['team_res'],'validCount','desc');
+		}else if ($where==5){
+			$data['team_res']=$this->array_sort($data['team_res'],'regCount','desc');
+		}
 		return   $data;
-	}	
+	}
 }
