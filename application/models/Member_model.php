@@ -77,11 +77,16 @@ class Member_model extends MY_Model
   * @param $id  会员id
   */
 	public function getTeam($limit=10,$page=0,$id){
+		//print_r($where);exit;
 		$this->db->from($this->table);
 		$this->db->select('member.id,member.real_name,member.mobile,lev.name as member_lvl');
 		$this->db->join('member_level as lev','lev.id=member.member_lvl','left');
 		$this->db->limit($limit,$page);
 		$this->db->where('member.referee_id',$id);
+		/*if($where==1){
+			$this->db->order_by('CONVERT( real_name USING gbk )', 'ASC');
+			$this->db->order_by('is_valid', 'desc');
+		}*/
 		return $this->db->get()->result_array();	
 	}
 		/*
@@ -102,6 +107,7 @@ class Member_model extends MY_Model
 	}
  /*
   * 获取会员等级
+  * @param $member_lvl  等级id
   * @param $member_lvl  等级id
   */
     public function getLevel($member_lvl)
