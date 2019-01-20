@@ -47,7 +47,7 @@ class Audit extends CI_Controller
 	public function audiRsult(){
 		
 		//print_r(654);exit;
-			 $id = 1;
+			 $id = 6;
 			 $audit_id=2;
 		 
 			 $audit['status']=1;
@@ -118,7 +118,7 @@ class Audit extends CI_Controller
     }
 	
 //升级会员等级判断
-    public function updateLevel($id)
+ public function updateLevel($id)
     {
         // print_r($id);exit;
         if (!$id) {
