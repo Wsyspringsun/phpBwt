@@ -77,7 +77,10 @@ class Team extends CI_Controller
      */
 	public function getTeamData($id,$offset,$where){
 		$data['user_res']['dirCount']=$this->member_model->getTeamCount($id);//直推人数
-		$data['user_res']['dirName']=$this->member_model->getDirName($id)['real_name'];//推荐人名称
+		//$data['user_res']['dirName']=;//推荐人名称
+		$data['user_res']['dirName']="**".mb_substr($this->member_model->getDirName($id)['real_name'], -1)
+		
+		
 		$user_ids=$this->member_model->getChild($id);
 		if(!empty($user_ids)){
 					$user_ids_arr=explode(',',$user_ids);  
